@@ -1,0 +1,22 @@
+# Dependencies and local build state
+node_modules/
+/.vite/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs and temporary files
+*.log
+*.tmp
+*.cache
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Keep production bundles in assets/dist committed for Hostinger deployment.

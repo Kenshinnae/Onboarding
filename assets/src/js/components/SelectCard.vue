@@ -1,0 +1,3 @@
+<script setup>const p=defineProps({modelValue:[String,Array],value:String,multiple:Boolean});const emit=defineEmits(['update:modelValue']);function choose(){if(!p.multiple)return emit('update:modelValue',p.value);const values=[...(p.modelValue||[])],i=values.indexOf(p.value);i<0?values.push(p.value):values.splice(i,1);emit('update:modelValue',values)}</script>
+<template><button type="button" class="select-card" :class="{selected:multiple?(modelValue||[]).includes(value):modelValue===value}" :aria-pressed="multiple?(modelValue||[]).includes(value):modelValue===value" @click="choose"><span class="check">✓</span>{{ value }}</button></template>
+
