@@ -32,3 +32,5 @@
 
 /* Form readability */
 .crm-wrap label,.crm-modal label,.crm-drawer label{font-size:12px;line-height:1.45}.crm-wrap input,.crm-wrap select,.crm-wrap textarea,.crm-modal input,.crm-modal select,.crm-modal textarea,.crm-drawer input,.crm-drawer select,.crm-drawer textarea{font-size:14px;line-height:1.5}.crm-wrap input,.crm-wrap select,.crm-modal input,.crm-modal select,.crm-drawer input,.crm-drawer select{min-height:46px}.crm-import-note,.crm-upload-help,.crm-brief-field small,.crm-section-heading p{font-size:11px}
+
+.crm-card-brief{display:flex;align-items:center;justify-content:space-between;margin:12px -4px 1px;padding:9px 10px;border-radius:8px;background:#edf4ff;color:var(--blue);font-size:11px;font-weight:800;text-decoration:none}.crm-card-brief:hover{background:#dfeaff;color:#174bad}.crm-card-brief span{font-size:13px}
