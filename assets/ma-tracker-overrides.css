@@ -49,3 +49,5 @@ body.toplevel_page_ma-tracker,body.admin_page_ma-client-detail{overflow-x:hidden
 
 /* Form readability */
 .co-ma-modal label,.co-ma-inline-form label,.co-ma-allowance-label,.co-ma-duration legend{font-size:12px}.co-ma-modal input,.co-ma-modal select,.co-ma-modal textarea,.co-ma-inline-form input,.co-ma-inline-form select,.co-ma-inline-form textarea,.co-ma-allowance-label input{font-size:14px;line-height:1.5;min-height:46px}
+.co-ma-pipeline-source{padding:13px 14px!important;background:#edf4ff;border:1px solid #cfe0f8;border-radius:10px}.co-ma-pipeline-source small{display:block;margin-top:7px;color:#607493;font-size:10px;font-weight:500;line-height:1.45}.co-ma-pipeline-source select{background-color:#fff}
+.co-ma-pipeline-link{display:inline-block;margin-top:5px;color:#255cc7;font-size:9px;font-weight:800;text-decoration:none}.co-ma-pipeline-link:hover{text-decoration:underline}
