@@ -46,3 +46,6 @@ body.toplevel_page_ma-tracker,body.admin_page_ma-client-detail{overflow-x:hidden
 @media(max-width:782px){
 	.co-ma-dashboard-footer .co-ma-btn{width:100%;text-align:center}
 }
+
+/* Form readability */
+.co-ma-modal label,.co-ma-inline-form label,.co-ma-allowance-label,.co-ma-duration legend{font-size:12px}.co-ma-modal input,.co-ma-modal select,.co-ma-modal textarea,.co-ma-inline-form input,.co-ma-inline-form select,.co-ma-inline-form textarea,.co-ma-allowance-label input{font-size:14px;line-height:1.5;min-height:46px}
