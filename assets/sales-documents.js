@@ -1,5 +1,50 @@
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('.sales-document-form');
+  function initializeDescriptions(container = form) {
+    container?.querySelectorAll('[data-sales-item]').forEach(item => {
+      if (item.querySelector('[data-description-editor]')) return;
+      const textarea = item.querySelector('[name="item_text[]"]');
+      const initial = item.querySelector('[data-description-initial]');
+      const wrapper = document.createElement('div'); wrapper.dataset.descriptionUi = '';
+      wrapper.className = 'sales-description-ui';
+      wrapper.innerHTML = '<div class="sales-description-toolbar" role="toolbar" aria-label="จัดรูปแบบคำอธิบาย"><button type="button" data-description-format="bold" aria-pressed="false"><b>B</b> ตัวหนา</button><button type="button" data-description-format="normal">ตัวปกติ</button></div><div class="sales-description-editor" data-description-editor contenteditable="true" role="textbox" aria-label="คำอธิบาย / Description" aria-multiline="true"></div>';
+      const editor = wrapper.querySelector('[data-description-editor]');
+      editor.innerHTML = initial.innerHTML;
+      textarea.after(wrapper); textarea.hidden = true;
+      item.querySelector('[name="item_format[]"]').value = 'rich';
+      const sync = () => { textarea.value = editor.innerHTML; };
+      const updateButton = () => wrapper.querySelector('[data-description-format="bold"]').setAttribute('aria-pressed', String(document.queryCommandState('bold')));
+      editor.addEventListener('input', () => { sync(); updateButton(); });
+      editor.addEventListener('keyup', updateButton);
+      editor.addEventListener('mouseup', updateButton);
+      editor.addEventListener('paste', event => {
+        event.preventDefault();
+        document.execCommand('insertText', false, event.clipboardData.getData('text/plain'));
+        sync();
+      });
+      wrapper.querySelector('.sales-description-toolbar').addEventListener('mousedown', event => event.preventDefault());
+      wrapper.addEventListener('click', event => {
+        const button = event.target.closest('[data-description-format]');
+        if (!button) return;
+        const selection = window.getSelection();
+        if (!selection.rangeCount || !editor.contains(selection.getRangeAt(0).commonAncestorContainer)) editor.focus();
+        if (button.dataset.descriptionFormat === 'bold') document.execCommand('bold');
+        else {
+          document.execCommand('removeFormat');
+          if (window.getSelection().isCollapsed && document.queryCommandState('bold')) document.execCommand('bold');
+        }
+        sync(); updateButton();
+      });
+      sync();
+    });
+  }
+  initializeDescriptions();
+  form?.addEventListener('submit', () => {
+    form.querySelectorAll('[data-sales-items] [data-sales-item]').forEach(item => {
+      const editor = item.querySelector('[data-description-editor]');
+      if (editor) item.querySelector('[name="item_text[]"]').value = editor.innerHTML;
+    });
+  });
   const money = n => Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   function calculate() {
     if (!form) return;
@@ -64,15 +109,19 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', event => {
     if (event.target.closest('[data-use-original-template]') && confirm('แทนรายละเอียดงานปัจจุบันด้วยแม่แบบต้นฉบับครบทุกส่วน?')) {
       form.querySelector('[data-sales-items]').replaceChildren(form.querySelector('[data-sales-default-items]').content.cloneNode(true));
+      initializeDescriptions();
       calculate();
     }
     const add = event.target.closest('[data-add-item]');
     if (add) {
       const list = form.querySelector('[data-sales-items]');
       const row = list.firstElementChild.cloneNode(true);
+      row.querySelectorAll('[data-description-ui]').forEach(el => el.remove());
+      row.querySelector('[data-description-initial]').innerHTML = '';
       row.querySelectorAll('input,textarea').forEach(el => el.value = '');
       list.append(row);
-      row.querySelector('textarea').focus();
+      initializeDescriptions();
+      row.querySelector('[data-description-editor]').focus();
     }
     const remove = event.target.closest('[data-remove-item]');
     if (remove && form.querySelectorAll('[data-sales-item]').length > 1) { remove.closest('[data-sales-item]').remove(); calculate(); }

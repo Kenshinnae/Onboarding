@@ -130,10 +130,12 @@ add_action( 'admin_post_co_sales_save_document', function () {
 	$issuer = co_sales_issuer( sanitize_key( $_POST['issuer_id'] ?? '' ) ); $client = get_post( $client_id );
 	$items = array();
 	foreach ( (array) ( $_POST['item_text'] ?? array() ) as $i => $text ) {
-		$items[] = array( 'text' => sanitize_textarea_field( wp_unslash( $text ) ), 'amount' => '' === ( $_POST['item_amount'][$i] ?? '' ) ? '' : max( 0, round( (float) $_POST['item_amount'][$i], 2 ) ) );
+		$rich = 'rich' === ( $_POST['item_format'][$i] ?? '' );
+		$clean = $rich ? implode( '<br>', array_column( co_sales_rich_lines( wp_unslash( $text ) ), 'html' ) ) : sanitize_textarea_field( wp_unslash( $text ) );
+		$items[] = array( 'text' => $clean, 'format' => $rich ? 'rich' : 'plain', 'amount' => '' === ( $_POST['item_amount'][$i] ?? '' ) ? '' : max( 0, round( (float) $_POST['item_amount'][$i], 2 ) ) );
 	}
 	if ( $items ) update_post_meta( $id, '_sales_items', $items );
-	update_post_meta( $id, '_sales_body', implode( "\n\n", array_column( $items, 'text' ) ) );
+	update_post_meta( $id, '_sales_body', implode( "\n\n", array_map( fn( $item ) => implode( "\n", array_column( co_sales_description_lines( $item ), 'text' ) ), $items ) ) );
 	if ( 'quotation' === $type && $items ) $_POST['subtotal'] = array_sum( array_column( $items, 'amount' ) );
 	$old_snapshot = co_sales_meta( $id, 'client_snapshot' );
 	if ( $old_snapshot && (int) co_sales_meta( $id, 'client_id' ) === $client_id ) $preserve_client = $old_snapshot;

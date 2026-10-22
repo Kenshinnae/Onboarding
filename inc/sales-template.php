@@ -59,10 +59,56 @@ function co_sales_baht_text( $amount ) {
 	return $read( (int) $value[0] ) . 'บาท' . ( (int) $value[1] ? $read( (int) $value[1] ) . 'สตางค์' : 'ถ้วน' );
 }
 
-function co_sales_item_editor( $item, $index ) { ?>
+function co_sales_description_is_bold( $text ) {
+	return (bool) preg_match( '/^(Project |Web strategic|Website Branding|Customize|การดูแล|Multiple |\(ภาษาที่|Retaining|โดยการ|สิ่งที่|สิทธิ|ระยะเวลา|\(ขึ้นอยู่)/u', trim( $text ) );
+}
+
+/** Normalize editor HTML into independent lines containing only text and bold. */
+function co_sales_rich_lines( $html ) {
+	$document = new DOMDocument();
+	$document->loadHTML( '<?xml encoding="UTF-8"><div>' . $html . '</div>', LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING );
+	$rows = array( array( 'text' => '', 'html' => '' ) );
+	$new_line = function () use ( &$rows ) { $rows[] = array( 'text' => '', 'html' => '' ); };
+	$walk = function ( $node, $bold = false ) use ( &$walk, &$rows, $new_line ) {
+		if ( XML_TEXT_NODE === $node->nodeType ) {
+			foreach ( preg_split( '/\r\n|\r|\n/', $node->nodeValue ) as $i => $text ) {
+				if ( $i ) $new_line();
+				$last = count( $rows ) - 1;
+				$rows[$last]['text'] .= $text;
+				$escaped = esc_html( $text );
+				$rows[$last]['html'] .= $bold && '' !== $text ? '<strong>' . $escaped . '</strong>' : $escaped;
+			}
+			return;
+		}
+		if ( XML_ELEMENT_NODE !== $node->nodeType ) return;
+		$tag = strtolower( $node->nodeName );
+		if ( in_array( $tag, array( 'script', 'style', 'iframe', 'object', 'svg' ), true ) ) return;
+		if ( 'br' === $tag ) { $new_line(); return; }
+		$block = in_array( $tag, array( 'p', 'div', 'li', 'h1', 'h2', 'h3' ), true );
+		if ( $block && '' !== $rows[count( $rows ) - 1]['text'] ) $new_line();
+		foreach ( $node->childNodes as $child ) $walk( $child, $bold || in_array( $tag, array( 'b', 'strong' ), true ) );
+		if ( $block && '' !== $rows[count( $rows ) - 1]['text'] ) $new_line();
+	};
+	$body = $document->getElementsByTagName( 'body' )->item( 0 );
+	if ( $body ) foreach ( $body->childNodes as $node ) $walk( $node );
+	if ( count( $rows ) > 1 && '' === $rows[count( $rows ) - 1]['text'] ) array_pop( $rows );
+	return $rows;
+}
+
+function co_sales_description_lines( $item ) {
+	if ( 'rich' === ( $item['format'] ?? '' ) ) return co_sales_rich_lines( $item['text'] );
+	return array_map( fn( $line ) => array( 'text' => $line, 'html' => esc_html( $line ) ), explode( "\n", $item['text'] ) );
+}
+
+function co_sales_item_editor( $item, $index ) {
+	$initial = array_map( function ( $row ) use ( $item ) {
+		return 'rich' !== ( $item['format'] ?? '' ) && co_sales_description_is_bold( $row['text'] ) ? '<strong>' . $row['html'] . '</strong>' : $row['html'];
+	}, co_sales_description_lines( $item ) ); ?>
 	<article class="sales-item-editor" data-sales-item>
 		<div class="sales-item-head"><strong>รายละเอียดงาน / รายการ</strong><button type="button" class="sales-link danger" data-remove-item>ลบรายการ</button></div>
 		<label>คำอธิบาย / Description<textarea name="item_text[]" rows="8"><?php echo esc_textarea( $item['text'] ); ?></textarea></label>
+		<input type="hidden" name="item_format[]" value="<?php echo 'rich' === ( $item['format'] ?? '' ) ? 'rich' : 'plain'; ?>">
+		<template data-description-initial><?php echo implode( '<br>', $initial ); ?></template>
 		<label>มูลค่าก่อนภาษี / Pre-Tax Amount<input type="number" min="0" step=".01" name="item_amount[]" value="<?php echo esc_attr( $item['amount'] ); ?>" placeholder="เว้นว่างสำหรับรายละเอียดที่ไม่มีราคา"></label>
 	</article>
 <?php }
@@ -99,14 +145,15 @@ function co_sales_render_paper( $id ) {
 		<div data-print-rows>
 		<?php if ( 'quotation' !== $type ) : ?><div class="sales-doc-line strong"><span></span><span><?php echo esc_html( co_sales_meta( $id, 'title' ) ); ?></span><strong><?php echo esc_html( co_sales_money( co_sales_document_total( $id ) ) ); ?></strong></div><?php endif; ?>
 		<?php foreach ( $items as $item ) :
-			$lines = explode( "\n", $item['text'] );
-			foreach ( $lines as $index => $line ) :
-				$strong = preg_match( '/^(Project |Web strategic|Website Branding|Customize|การดูแล|Multiple |\(ภาษาที่|Retaining|โดยการ|สิ่งที่|สิทธิ|ระยะเวลา|\(ขึ้นอยู่)/u', trim( $line ) );
+			$lines = co_sales_description_lines( $item );
+			foreach ( $lines as $index => $description ) :
+				$line = $description['text'];
+				$strong = 'rich' !== ( $item['format'] ?? '' ) && co_sales_description_is_bold( $line );
 				$classes = $strong ? ' strong' : '';
 				if ( preg_match( '/^(Project Concept|Project Execution|Customize Function|การดูแลครอบคลุมถึง|Multiple Languages|Retaining & Maintenance|สิ่งที่ลูกค้า|ระยะเวลา)/u', trim( $line ) ) ) $classes .= ' is-section';
 				if ( str_starts_with( trim( $line ), '-' ) ) $classes .= ' is-bullet';
 				if ( '' === trim( $line ) ) $classes .= ' is-blank'; ?>
-				<div class="sales-doc-line<?php echo esc_attr( $classes ); ?>"><span></span><span><?php echo $line === '' ? '&nbsp;' : esc_html( $line ); ?></span><strong><?php if ( ( str_starts_with( $item['text'], 'Project Concept :' ) ? 1 : 0 ) === $index && 'quotation' === $type && '' !== $item['amount'] ) echo esc_html( co_sales_money( $item['amount'] ) ); ?></strong></div>
+				<div class="sales-doc-line<?php echo esc_attr( $classes ); ?>"><span></span><span><?php echo $line === '' ? '&nbsp;' : $description['html']; ?></span><strong><?php if ( ( str_starts_with( $lines[0]['text'], 'Project Concept :' ) ? 1 : 0 ) === $index && 'quotation' === $type && '' !== $item['amount'] ) echo esc_html( co_sales_money( $item['amount'] ) ); ?></strong></div>
 			<?php endforeach;
 		endforeach; if ( $schedule ) co_sales_print_terms( $schedule, co_sales_meta( $id, 'wht_rate', 3 ) ); ?>
 		<?php if ( co_sales_meta( $id, 'notes' ) ) : ?><div class="sales-doc-line"><span></span><span><?php echo nl2br( esc_html( co_sales_meta( $id, 'notes' ) ) ); ?></span><span></span></div><?php endif; ?>
