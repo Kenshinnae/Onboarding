@@ -130,21 +130,26 @@ add_action( 'admin_post_co_sales_save_document', function () {
 	if ( 'quotation' !== $type && count( $schedule ) > 1 ) $schedule = array( $schedule[max( 0, $installment - 1 )] ?? $schedule[0] );
 	if ( 'quotation' !== $type && ! $schedule ) wp_die( 'กรุณาระบุเปอร์เซ็นต์และเงื่อนไขของงวดนี้' );
 	$_POST['payment_schedule'] = wp_slash( implode( "\n", array_map( fn( $row ) => $row['percent'] . '|' . $row['description'], $schedule ) ) );
-	if ( $id && 'sales_document' === get_post_type( $id ) ) { $number = co_sales_meta( $id, 'number' ); wp_update_post( array( 'ID' => $id, 'post_title' => $number ) ); } else { $number = co_sales_next_number( $type, $client_id, $date, $installment ); $id = wp_insert_post( array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'post_title' => $number ), true ); }
-	if ( is_wp_error( $id ) || ! $id ) wp_die( 'ไม่สามารถบันทึกเอกสารได้' );
-	$issuer = co_sales_issuer( sanitize_key( $_POST['issuer_id'] ?? '' ) ); $client = get_post( $client_id );
 	$items = array();
 	foreach ( (array) ( $_POST['item_text'] ?? array() ) as $i => $text ) {
 		$rich = 'rich' === ( $_POST['item_format'][$i] ?? '' );
 		$clean = $rich ? implode( '<br>', array_column( co_sales_rich_lines( wp_unslash( $text ) ), 'html' ) ) : sanitize_textarea_field( wp_unslash( $text ) );
 		$items[] = array( 'text' => $clean, 'format' => $rich ? 'rich' : 'plain', 'amount' => '' === ( $_POST['item_amount'][$i] ?? '' ) ? '' : max( 0, round( (float) $_POST['item_amount'][$i], 2 ) ) );
 	}
+	$base_total = co_sales_items_value( $items );
+	$discount = $_POST['discount'] ?? co_sales_meta( $id, 'discount', 0 );
+	if ( '' === $discount ) $discount = 0;
+	if ( ! is_numeric( $discount ) || ! is_finite( (float) $discount ) || (float) $discount < 0 || round( (float) $discount, 2 ) > $base_total ) wp_die( 'ส่วนลดต้องเป็นจำนวนเงินตั้งแต่ 0 และไม่เกินมูลค่ารวมรายการ' );
+	$discount = round( (float) $discount, 2 );
+	if ( $id && 'sales_document' === get_post_type( $id ) ) { $number = co_sales_meta( $id, 'number' ); wp_update_post( array( 'ID' => $id, 'post_title' => $number ) ); } else { $number = co_sales_next_number( $type, $client_id, $date, $installment ); $id = wp_insert_post( array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'post_title' => $number ), true ); }
+	if ( is_wp_error( $id ) || ! $id ) wp_die( 'ไม่สามารถบันทึกเอกสารได้' );
+	$issuer = co_sales_issuer( sanitize_key( $_POST['issuer_id'] ?? '' ) ); $client = get_post( $client_id );
 	if ( $items ) update_post_meta( $id, '_sales_items', $items );
 	update_post_meta( $id, '_sales_body', implode( "\n\n", array_map( fn( $item ) => implode( "\n", array_column( co_sales_description_lines( $item ), 'text' ) ), $items ) ) );
-	$base_total = co_sales_items_value( $items );
 	$percent = 'quotation' === $type ? 100 : (float) $schedule[0]['percent'];
-	$_POST['subtotal'] = co_sales_installment_value( $base_total, $percent );
+	$_POST['subtotal'] = co_sales_installment_value( co_sales_discounted_base( $base_total, $discount ), $percent );
 	update_post_meta( $id, '_sales_base_total', $base_total );
+	update_post_meta( $id, '_sales_discount', $discount );
 	update_post_meta( $id, '_sales_installment_percent', $percent );
 	$title = sanitize_text_field( wp_unslash( $_POST['document_title'] ?? '' ) );
 	if ( 'quotation' !== $type && ( '' === $title || preg_match( '/^งวดที่ \d+\s*:/u', $title ) ) ) $_POST['document_title'] = wp_slash( 'งวดที่ ' . $installment . ' : ' . $percent . '% ' . $schedule[0]['description'] );
@@ -178,18 +183,17 @@ add_action( 'admin_post_co_sales_derive_document', function () {
 	$date = wp_date( 'Y-m-d' );
 	$number = co_sales_next_number( $type, $client_id, $date, $installment );
 	$id = wp_insert_post( array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'post_title' => $number ) );
-	foreach ( array( 'project_id','client_id','client_snapshot','issuer_id','issuer_snapshot','body','wht_rate','notes','items','payment_schedule','payment_schedule_text' ) as $key ) update_post_meta( $id, '_sales_' . $key, co_sales_meta( $source_id, $key ) );
+	foreach ( array( 'project_id','client_id','client_snapshot','issuer_id','issuer_snapshot','body','wht_rate','notes','items','discount','payment_schedule','payment_schedule_text' ) as $key ) update_post_meta( $id, '_sales_' . $key, co_sales_meta( $source_id, $key ) );
 	update_post_meta( $id, '_sales_items', co_sales_items( $source_id ) );
 	$subtotal = co_sales_document_total( $source_id );
+	$base_total = co_sales_meta( $source_id, 'base_total', co_sales_items_value( co_sales_items( $source_id ) ) );
 	if ( 'invoice' === $type ) {
 		$schedule = co_sales_schedule( $source_id );
 		$row = $schedule[max( 0, $installment - 1 )] ?? array( 'percent' => 100, 'description' => '' );
-		$base_total = $subtotal;
-		$subtotal = co_sales_installment_value( $base_total, $row['percent'] );
+		$subtotal = co_sales_installment_value( $subtotal, $row['percent'] );
 		update_post_meta( $id, '_sales_title', 'งวดที่ ' . $installment . ' : ' . $row['percent'] . '% ' . $row['description'] );
 	} else {
 		$row = co_sales_billing_schedule( $source_id )[0];
-		$base_total = co_sales_meta( $source_id, 'base_total', co_sales_items_value( co_sales_items( $source_id ) ) );
 		update_post_meta( $id, '_sales_title', co_sales_meta( $source_id, 'title' ) );
 		update_post_meta( $source_id, '_sales_status', 'paid' );
 	}

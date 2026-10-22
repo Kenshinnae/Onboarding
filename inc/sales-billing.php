@@ -11,6 +11,22 @@ function co_sales_installment_value( $base, $percent ) {
 	return round( round( max( 0, (float) $base ), 2 ) * max( 0, min( 100, (float) $percent ) ) / 100, 2 );
 }
 
+/** Discounts belong to the whole job; invoices receive their installment's share. */
+function co_sales_discounted_base( $base, $discount ) {
+	return round( max( 0, round( (float) $base, 2 ) - max( 0, round( (float) $discount, 2 ) ) ), 2 );
+}
+
+function co_sales_document_breakdown( $id ) {
+	$subtotal = co_sales_document_total( $id );
+	$discount = max( 0, (float) co_sales_meta( $id, 'discount', 0 ) );
+	if ( ! $discount ) return array( 'price' => $subtotal, 'discount' => 0 );
+	$base = (float) co_sales_meta( $id, 'base_total', co_sales_items_value( co_sales_items( $id ) ) );
+	$percent = 'quotation' === co_sales_meta( $id, 'document_type' ) ? 100 : co_sales_billing_schedule( $id )[0]['percent'];
+	$price = co_sales_installment_value( $base, $percent );
+	// Reconcile rounded installment amounts so Price - Discount always equals Subtotal.
+	return array( 'price' => $price, 'discount' => max( 0, round( $price - $subtotal, 2 ) ) );
+}
+
 function co_sales_billing_schedule( $id ) {
 	$schedule = co_sales_schedule( $id );
 	if ( 'quotation' === co_sales_meta( $id, 'document_type' ) ) return $schedule;

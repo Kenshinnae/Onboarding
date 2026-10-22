@@ -51,19 +51,26 @@ document.addEventListener('DOMContentLoaded', () => {
   function calculate() {
     if (!form) return;
     const sum = [...form.querySelectorAll('[name="item_amount[]"]')].reduce((n, el) => n + Math.round(Math.max(0, Number(el.value) || 0) * 100), 0) / 100;
+    const discountInput = form.querySelector('[name="discount"]');
+    const enteredDiscount = Number(discountInput.value) || 0;
+    discountInput.max = sum.toFixed(2);
+    discountInput.setCustomValidity(enteredDiscount < 0 || enteredDiscount > sum ? 'ส่วนลดต้องเป็นจำนวนเงินตั้งแต่ 0 และไม่เกินมูลค่ารวมรายการ' : '');
+    const discount = rounded(Math.min(sum, Math.max(0, enteredDiscount)));
+    const netBase = rounded(sum - discount);
     const quotation = form.dataset.documentType === 'quotation';
     const percent = quotation ? 100 : Math.min(100, Math.max(0, Number(schedule?.querySelector('[name="schedule_percent[]"]').value) || 0));
     const subtotal = form.querySelector('[name="subtotal"]');
-    const value = rounded(sum * percent / 100);
+    const value = rounded(netBase * percent / 100);
     subtotal.value = value.toFixed(2);
     form.querySelector('[data-sales-base-total]').value = money(sum);
+    form.querySelector('[data-sales-net-base]').value = money(netBase);
     form.querySelector('[data-billing-base-panel]').hidden = quotation;
-    form.querySelector('[data-billing-formula]').textContent = '฿' + money(sum) + ' × ' + percent + '% = ฿' + money(value) + ' (ก่อนหัก ณ ที่จ่าย)';
-    form.querySelector('[data-subtotal-label]').textContent = quotation ? 'ราคาสุทธิรวมทุกรายการ (คำนวณอัตโนมัติ)' : 'มูลค่างวดนี้ (คำนวณอัตโนมัติ)';
+    form.querySelector('[data-billing-formula]').textContent = 'ยอดหลังส่วนลด ฿' + money(netBase) + ' × ' + percent + '% = ฿' + money(value) + ' (ก่อนหัก ณ ที่จ่าย)' + (discount ? ' · ส่วนลดเฉลี่ยงวดนี้ ฿' + money(rounded(rounded(sum * percent / 100) - value)) : '');
+    form.querySelector('[data-subtotal-label]').textContent = quotation ? 'ราคาสุทธิหลังส่วนลด (คำนวณอัตโนมัติ)' : 'มูลค่างวดนี้หลังส่วนลด (คำนวณอัตโนมัติ)';
     const wht = rounded(Math.min(100, Math.max(0, Number(form.querySelector('[name="wht_rate"]').value) || 0)) * value / 100);
     form.querySelector('[data-sales-wht]').textContent = money(wht);
     form.querySelector('[data-sales-total]').textContent = money(rounded(value - wht));
-    updateSchedule(sum);
+    updateSchedule(netBase);
     // Keep an automatically generated installment title in sync, preserving custom titles.
     const title = form.querySelector('[name="document_title"]');
     if (!quotation && /^งวดที่ \d+\s*:/.test(title.value)) {
@@ -110,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalLabel = schedule.querySelector('[data-schedule-total]');
     totalLabel.textContent = quotation
       ? 'รวม ' + Number(total.toFixed(2)) + '% ' + (valid ? '— ครบ 100%' : '— เปอร์เซ็นต์ทุกงวดควรรวมเป็น 100%')
-      : 'เรียกเก็บงวดนี้ ' + Number(total.toFixed(2)) + '% ' + (valid ? 'ของมูลค่ารวมรายการ' : '— ระบุเปอร์เซ็นต์มากกว่า 0 และไม่เกิน 100');
+      : 'เรียกเก็บงวดนี้ ' + Number(total.toFixed(2)) + '% ' + (valid ? 'ของยอดหลังส่วนลด' : '— ระบุเปอร์เซ็นต์มากกว่า 0 และไม่เกิน 100');
     totalLabel.classList.toggle('is-invalid', !valid);
   }
   schedule?.addEventListener('click', event => {
@@ -168,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row.remove();
         // Keep a section heading with its first detail line on continuation pages.
         const carry = [];
-        while (body.lastElementChild?.matches('.is-section,.is-blank')) {
+        while (body.lastElementChild && (body.lastElementChild.matches('.is-section,.is-blank') || (row.matches('.is-payment-terms') && body.lastElementChild.matches('.is-payment-terms')))) {
           const previous = body.lastElementChild;
           carry.unshift(previous); previous.remove();
         }
@@ -183,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
       end.remove(); const moved = [];
       const reserved = 190;
       let height = 0;
-      while (body.children.length && height < reserved) {
+      while (body.children.length && (height < reserved || body.lastElementChild.matches('.is-section,.is-blank') || (moved[0]?.matches('.is-payment-terms') && body.lastElementChild.matches('.is-payment-terms')))) {
         const row = body.lastElementChild; height += row.getBoundingClientRect().height; moved.unshift(row); row.remove();
       }
       nextPage(); body.append(...moved); sheet.append(end);

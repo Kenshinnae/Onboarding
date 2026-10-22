@@ -65,6 +65,11 @@ body *{visibility:hidden!important}
 /* Billing progress uses the same cards and colors as the document editor. */
 .sales-wrap [hidden]{display:none!important}
 .sales-form input[readonly]{background:#f3f7ff;color:#17375f;cursor:default}
+.sales-discount-section{margin-top:24px;padding:22px;background:#f8faff;border:1px solid #d6e2f4;border-radius:12px}
+.sales-discount-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.sales-discount-section>p{margin:0;color:#637596;font-size:13px;line-height:1.6}
+.sales-document-sheet .sales-doc-discount span,.sales-document-sheet .sales-doc-discount b{color:#c42626}
+@media(max-width:700px){.sales-discount-grid{grid-template-columns:1fr}}
 .sales-billing-formula{margin:8px 0 0;color:#38639a;font-size:15px}
 .sales-schedule-amount{display:grid;gap:8px;color:#17375f;overflow-wrap:anywhere}
 .sales-schedule-amount small{color:#637596;font-size:12px}

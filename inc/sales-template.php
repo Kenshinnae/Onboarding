@@ -161,14 +161,28 @@ function co_sales_render_paper( $id ) {
 		endforeach; if ( $schedule ) co_sales_print_terms( $schedule, co_sales_meta( $id, 'wht_rate', 3 ) ); ?>
 		<?php if ( co_sales_meta( $id, 'notes' ) ) : ?><div class="sales-doc-line"><span></span><span><?php echo nl2br( esc_html( co_sales_meta( $id, 'notes' ) ) ); ?></span><span></span></div><?php endif; ?>
 		</div>
-		<div data-print-footer><div class="sales-doc-footer"><div class="sales-doc-payment"><?php if ( in_array( $type, array( 'quotation', 'invoice' ), true ) ) : ?><b>การชำระเงิน / Payment</b><div><?php echo nl2br( esc_html( $issuer['bank'] ?? '' ) ); ?></div><?php endif; ?></div><div class="sales-doc-totals"><div><span>ราคาสุทธิสินค้า (บาท) / Pre-WHT Amount</span><b><?php echo esc_html( co_sales_money( co_sales_document_total( $id ) ) ); ?></b></div><div><span>จำนวนหัก ณ ที่จ่าย <?php echo esc_html( co_sales_meta( $id, 'wht_rate', 3 ) ); ?>% (บาท) / WHT</span><b><?php echo esc_html( co_sales_money( co_sales_wht( $id ) ) ); ?></b></div><div><span>จำนวนเงินรวมทั้งสิ้น (บาท) / Grand Total</span><b><?php echo esc_html( co_sales_money( co_sales_grand_total( $id ) ) ); ?></b></div><div class="sales-doc-baht"><?php echo esc_html( co_sales_baht_text( co_sales_grand_total( $id ) ) ); ?></div></div></div><div class="sales-doc-signatures"><div><p>อนุมัติโดย / Approved by</p><div class="signature-space"><?php if ( $signature ) : ?><img src="<?php echo esc_url( $signature ); ?>" alt="ลายเซ็นผู้ออกเอกสาร"><?php endif; ?></div><p>วันที่ / Date <?php echo esc_html( co_sales_date( co_sales_meta( $id, 'issue_date' ) ) ); ?></p></div><div><p>ยอมรับ<?php echo 'receipt' === $type ? 'ใบเสร็จรับเงิน' : ( 'invoice' === $type ? 'ใบแจ้งหนี้' : 'ใบเสนอราคา' ); ?> / Accepted by</p><div class="signature-space dotted"></div><p>วันที่ / Date..........................</p></div></div></div>
+		<div data-print-footer><div class="sales-doc-footer"><div class="sales-doc-payment"><?php if ( in_array( $type, array( 'quotation', 'invoice' ), true ) ) : ?><b>การชำระเงิน / Payment</b><div><?php echo nl2br( esc_html( $issuer['bank'] ?? '' ) ); ?></div><?php endif; ?></div><?php co_sales_print_totals( $id ); ?></div><div class="sales-doc-signatures"><div><p>อนุมัติโดย / Approved by</p><div class="signature-space"><?php if ( $signature ) : ?><img src="<?php echo esc_url( $signature ); ?>" alt="ลายเซ็นผู้ออกเอกสาร"><?php endif; ?></div><p>วันที่ / Date <?php echo esc_html( co_sales_date( co_sales_meta( $id, 'issue_date' ) ) ); ?></p></div><div><p>ยอมรับ<?php echo 'receipt' === $type ? 'ใบเสร็จรับเงิน' : ( 'invoice' === $type ? 'ใบแจ้งหนี้' : 'ใบเสนอราคา' ); ?> / Accepted by</p><div class="signature-space dotted"></div><p>วันที่ / Date..........................</p></div></div></div>
 	</div>
 	<div class="sales-print-pages" data-sales-pages></div>
 	<?php
 }
 
+function co_sales_print_totals( $id ) {
+	$breakdown = co_sales_document_breakdown( $id ); ?>
+	<div class="sales-doc-totals">
+	<?php if ( $breakdown['discount'] > 0 ) : ?>
+		<div><span>ราคาสินค้า (บาท) / Price</span><b><?php echo esc_html( co_sales_money( $breakdown['price'] ) ); ?></b></div>
+		<div class="sales-doc-discount"><span>ส่วนลด (บาท) / Discount</span><b><?php echo esc_html( co_sales_money( $breakdown['discount'] ) ); ?></b></div>
+	<?php endif; ?>
+		<div><span>ราคาสุทธิสินค้า (บาท) / Pre-WHT Amount</span><b><?php echo esc_html( co_sales_money( co_sales_document_total( $id ) ) ); ?></b></div>
+		<div><span>จำนวนหัก ณ ที่จ่าย <?php echo esc_html( co_sales_meta( $id, 'wht_rate', 3 ) ); ?>% (บาท) / WHT</span><b><?php echo esc_html( co_sales_money( co_sales_wht( $id ) ) ); ?></b></div>
+		<div><span>จำนวนเงินรวมทั้งสิ้น (บาท) / Grand Total</span><b><?php echo esc_html( co_sales_money( co_sales_grand_total( $id ) ) ); ?></b></div>
+		<div class="sales-doc-baht"><?php echo esc_html( co_sales_baht_text( co_sales_grand_total( $id ) ) ); ?></div>
+	</div>
+<?php }
+
 function co_sales_print_terms( $schedule, $rate = 3 ) { ?>
-	<div class="sales-doc-line strong is-section"><span></span><span>Terms of Payment :</span><span></span></div>
-	<?php foreach ( $schedule as $row ) : ?><div class="sales-doc-line"><span></span><span><b><?php echo esc_html( (float) $row['percent'] ); ?>%</b> <?php echo esc_html( $row['description'] ); ?></span><span></span></div><?php endforeach; ?>
-	<div class="sales-doc-line"><span></span><span>จำนวนหัก ณ ที่จ่าย <?php echo esc_html( $rate ); ?>% (บาท) / WHT</span><span></span></div>
+	<div class="sales-doc-line strong is-section is-payment-terms"><span></span><span>Terms of Payment :</span><span></span></div>
+	<?php foreach ( $schedule as $row ) : ?><div class="sales-doc-line is-payment-terms"><span></span><span><b><?php echo esc_html( (float) $row['percent'] ); ?>%</b> <?php echo esc_html( $row['description'] ); ?></span><span></span></div><?php endforeach; ?>
+	<div class="sales-doc-line is-payment-terms"><span></span><span>จำนวนหัก ณ ที่จ่าย <?php echo esc_html( $rate ); ?>% (บาท) / WHT</span><span></span></div>
 <?php }
