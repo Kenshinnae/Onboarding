@@ -18,6 +18,49 @@ document.addEventListener('DOMContentLoaded', () => {
     calculate();
   });
   calculate();
+
+  const schedule = form?.querySelector('[data-sales-schedule]');
+  function updateSchedule() {
+    if (!schedule) return;
+    const preview = schedule.querySelector('[data-schedule-preview]');
+    preview.replaceChildren();
+    const heading = document.createElement('p'); heading.textContent = 'Terms of Payment :';
+    preview.append(heading);
+    let total = 0;
+    schedule.querySelectorAll('[data-schedule-row]').forEach((row, index) => {
+      row.querySelector('[data-schedule-label]').textContent = 'งวดที่ ' + (index + 1);
+      const input = row.querySelector('[name="schedule_percent[]"]');
+      const percent = Number(input.value || 0);
+      total += percent;
+      const descriptionInput = row.querySelector('textarea');
+      descriptionInput.required = percent > 0;
+      const description = descriptionInput.value.trim();
+      const line = document.createElement('p');
+      const value = document.createElement('b'); value.textContent = percent + '% ';
+      line.append(value, document.createTextNode(description || '— กรุณาระบุเงื่อนไขการชำระ'));
+      preview.append(line);
+    });
+    const valid = Math.abs(total - 100) < 0.001;
+    const totalLabel = schedule.querySelector('[data-schedule-total]');
+    totalLabel.textContent = 'รวม ' + Number(total.toFixed(2)) + '% ' + (valid ? '— ครบ 100%' : '— เปอร์เซ็นต์ทุกงวดควรรวมเป็น 100%');
+    totalLabel.classList.toggle('is-invalid', !valid);
+  }
+  schedule?.addEventListener('input', updateSchedule);
+  schedule?.addEventListener('click', event => {
+    const list = schedule.querySelector('[data-schedule-rows]');
+    if (event.target.closest('[data-add-schedule]')) {
+      const row = list.firstElementChild.cloneNode(true);
+      row.querySelectorAll('input,textarea').forEach(el => el.value = '');
+      list.append(row); updateSchedule(); row.querySelector('input').focus();
+    }
+    const remove = event.target.closest('[data-remove-schedule]');
+    if (remove) {
+      if (list.children.length > 1) remove.closest('[data-schedule-row]').remove();
+      else list.querySelectorAll('input,textarea').forEach(el => el.value = '');
+      updateSchedule();
+    }
+  });
+  updateSchedule();
   document.addEventListener('click', event => {
     if (event.target.closest('[data-use-original-template]') && confirm('แทนรายละเอียดงานปัจจุบันด้วยแม่แบบต้นฉบับครบทุกส่วน?')) {
       form.querySelector('[data-sales-items]').replaceChildren(form.querySelector('[data-sales-default-items]').content.cloneNode(true));

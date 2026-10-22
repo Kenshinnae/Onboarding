@@ -94,7 +94,7 @@ function co_sales_render_paper( $id ) {
 	$items = co_sales_items( $id );
 	usort( $items, fn( $a, $b ) => (int) $a['page'] <=> (int) $b['page'] );
 	$terms_page = min( 2, max( array_column( $items, 'page' ) ) );
-	$schedule = (array) co_sales_meta( $id, 'payment_schedule', array() );
+	$schedule = co_sales_schedule( $id );
 	?>
 	<div data-sales-print-source hidden>
 		<div data-print-header><?php co_sales_print_header( $id, $type, $client, $issuer ); ?></div>

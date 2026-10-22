@@ -47,7 +47,22 @@ function co_sales_default_concept() {
 	return "Project Concept :\nWeb Strategic Planning :\n- Creative Strategic Direction\n- Communication Strategy\n- User Behavior Flow (UX Strategy)\n- Customer Experience\n- Brand Perception\n- Engagement & Conversion\n- Measurement & Analysis\n- Optimization\n- Competitor Analysis\n- Website Benchmark\n- Scope of Works\n- Wireframe\n\nProject Execution :\nWebsite Branding - ออกแบบและพัฒนาเว็บไซต์นำเสนอภาพลักษณ์แบรนด์\n- Responsive Design\n- PDPA\n- User Manual Website\n\nRetaining & Maintenance :\n- Website Warranty\n- Technical Support\n- Content Update\n- Compatibility and Performance Monitoring";
 }
 function co_sales_parse_schedule( $text ) {
-	$rows = array(); foreach ( preg_split( '/\r\n|\r|\n/', (string) $text ) as $line ) { $line = trim( $line ); if ( ! $line ) continue; $parts = array_map( 'trim', explode( '|', $line, 2 ) ); $percent = min( 100, max( 0, (float) $parts[0] ) ); if ( $percent ) $rows[] = array( 'percent' => $percent, 'description' => sanitize_text_field( $parts[1] ?? '' ) ); } return $rows;
+	$rows = array();
+	foreach ( preg_split( '/\r\n|\r|\n/', (string) $text ) as $line ) {
+		// Accept the original internal format and ordinary text entered in older forms.
+		if ( ! preg_match( '/^\s*(\d+(?:\.\d+)?)\s*(?:\||%\s*|\s+)(.*)$/u', $line, $match ) ) {
+			if ( ! preg_match( '/^\s*(\d+(?:\.\d+)?)\s*$/', $line, $match ) ) continue;
+		}
+		$percent = (float) $match[1];
+		if ( $percent > 0 && $percent <= 100 ) $rows[] = array( 'percent' => $percent, 'description' => sanitize_text_field( trim( $match[2] ?? '' ) ) );
+	}
+	return $rows;
+}
+
+function co_sales_schedule( $id ) {
+	$text = co_sales_meta( $id, 'payment_schedule_text' );
+	$parsed = co_sales_parse_schedule( $text );
+	return $parsed ?: (array) co_sales_meta( $id, 'payment_schedule', array() );
 }
 function co_sales_issuers() {
 	$issuers = get_option( 'co_sales_issuers', array() );
@@ -96,7 +111,19 @@ add_action( 'admin_post_co_sales_save_document', function () {
 	if ( $id ) $type = co_sales_meta( $id, 'document_type' );
 	$parsed_date = DateTimeImmutable::createFromFormat( '!Y-m-d', $date );
 	if ( ! $parsed_date || $parsed_date->format( 'Y-m-d' ) !== $date ) wp_die( 'วันที่เอกสารไม่ถูกต้อง' );
-	$schedule = co_sales_parse_schedule( wp_unslash( $_POST['payment_schedule'] ?? '' ) );
+	$schedule = array();
+	if ( isset( $_POST['schedule_percent'] ) ) {
+		foreach ( (array) $_POST['schedule_percent'] as $i => $percent ) {
+			$description = sanitize_text_field( wp_unslash( $_POST['schedule_description'][$i] ?? '' ) );
+			if ( '' === trim( (string) $percent ) && '' === $description ) continue;
+			if ( ! is_numeric( $percent ) || (float) $percent <= 0 || (float) $percent > 100 ) wp_die( 'เปอร์เซ็นต์แต่ละงวดต้องมากกว่า 0 และไม่เกิน 100' );
+			if ( '' === $description ) wp_die( 'กรุณาระบุเงื่อนไขการชำระของแต่ละงวด' );
+			$schedule[] = array( 'percent' => (float) $percent, 'description' => $description );
+		}
+		$_POST['payment_schedule'] = wp_slash( implode( "\n", array_map( fn( $row ) => $row['percent'] . '|' . $row['description'], $schedule ) ) );
+	} else {
+		$schedule = co_sales_parse_schedule( wp_unslash( $_POST['payment_schedule'] ?? '' ) );
+	}
 	if ( 'quotation' === $type && $schedule && abs( array_sum( array_column( $schedule, 'percent' ) ) - 100 ) > 0.001 ) wp_die( 'เปอร์เซ็นต์งวดชำระต้องรวมเป็น 100%' );
 	if ( $id && 'sales_document' === get_post_type( $id ) ) { $number = co_sales_meta( $id, 'number' ); wp_update_post( array( 'ID' => $id, 'post_title' => $number ) ); } else { $number = co_sales_next_number( $type, $client_id, $date, $installment ); $id = wp_insert_post( array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'post_title' => $number ), true ); }
 	if ( is_wp_error( $id ) || ! $id ) wp_die( 'ไม่สามารถบันทึกเอกสารได้' );
@@ -140,7 +167,7 @@ add_action( 'admin_post_co_sales_derive_document', function () {
 	foreach ( array( 'project_id','client_id','client_snapshot','issuer_id','issuer_snapshot','body','wht_rate','notes','items','payment_schedule','payment_schedule_text' ) as $key ) update_post_meta( $id, '_sales_' . $key, co_sales_meta( $source_id, $key ) );
 	$subtotal = co_sales_document_total( $source_id );
 	if ( 'invoice' === $type ) {
-		$schedule = (array) co_sales_meta( $source_id, 'payment_schedule', array() );
+		$schedule = co_sales_schedule( $source_id );
 		$row = $schedule[max( 0, $installment - 1 )] ?? array( 'percent' => 100, 'description' => '' );
 		$subtotal = round( $subtotal * (float) $row['percent'] / 100, 2 );
 		update_post_meta( $id, '_sales_title', 'งวดที่ ' . $installment . ' : ' . $row['percent'] . '% ' . $row['description'] );
