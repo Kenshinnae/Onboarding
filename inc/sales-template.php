@@ -5,17 +5,16 @@ function co_sales_sync_payment( $id ) {
 	if ( 'receipt' !== co_sales_meta( $id, 'document_type' ) ) return;
 	$project_id = absint( co_sales_meta( $id, 'project_id' ) );
 	$payment_id = absint( co_sales_meta( $id, 'payment_id' ) );
-	if ( 'client_project' !== get_post_type( $project_id ) ) return;
-	$number = co_sales_meta( $id, 'number' );
-	$data = array( 'post_type' => 'project_payment', 'post_status' => 'publish', 'post_title' => 'Receipt ' . $number );
-	if ( $payment_id && 'project_payment' === get_post_type( $payment_id ) ) $data['ID'] = $payment_id;
-	$payment_id = wp_insert_post( $data, true );
-	if ( is_wp_error( $payment_id ) ) return;
-	update_post_meta( $payment_id, '_crm_project_id', $project_id );
-	update_post_meta( $payment_id, '_crm_amount', co_sales_grand_total( $id ) );
-	update_post_meta( $payment_id, '_crm_paid_date', co_sales_meta( $id, 'issue_date' ) );
-	update_post_meta( $payment_id, '_crm_note', 'Receipt ' . $number );
+	$invoice = absint( co_sales_meta( $id, 'source_document_id' ) );
+	if ( ! $payment_id ) $payment_id = co_sales_invoice_payment( $invoice );
+	if ( ! $payment_id || 'project_payment' !== get_post_type( $payment_id ) || 'publish' !== get_post_status( $payment_id ) ) return;
+	if ( $project_id !== absint( get_post_meta( $payment_id, '_crm_project_id', true ) ) ) return;
+	$claimed = co_sales_payment_invoice( $payment_id );
+	if ( $claimed && $claimed !== $invoice ) return;
+	// A receipt acknowledges an existing payment; its issue date is not a cash date.
 	update_post_meta( $id, '_sales_payment_id', $payment_id );
+	if ( 'invoice' === co_sales_meta( $invoice, 'document_type' ) ) { update_post_meta( $invoice, '_sales_payment_id', $payment_id ); update_post_meta( $payment_id, '_crm_invoice_id', $invoice ); }
+	update_post_meta( $payment_id, '_crm_receipt_id', $id );
 }
 
 function co_sales_default_items() {

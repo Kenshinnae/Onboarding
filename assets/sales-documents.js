@@ -48,6 +48,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const money = n => Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   const rounded = n => Math.round((n + Number.EPSILON) * 100) / 100;
   const schedule = form?.querySelector('[data-sales-schedule]');
+  const financialLocked = form?.dataset.financialLocked === '1';
+  if (financialLocked) {
+    form.querySelectorAll('[name="item_amount[]"],[name="discount"],[name="wht_rate"],[name="installment_no"],[name="schedule_percent[]"],[name="schedule_description[]"]').forEach(input => input.readOnly = true);
+    form.querySelectorAll('[name="project_id"],[name="client_id"]').forEach(select => {
+      const hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.name = select.name; hidden.value = select.value; select.after(hidden); select.disabled = true;
+    });
+    form.querySelectorAll('[data-add-item],[data-remove-item],[data-use-original-template]').forEach(button => button.hidden = true);
+  }
   function calculate() {
     if (!form) return;
     const sum = [...form.querySelectorAll('[name="item_amount[]"]')].reduce((n, el) => n + Math.round(Math.max(0, Number(el.value) || 0) * 100), 0) / 100;
@@ -60,14 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const quotation = form.dataset.documentType === 'quotation';
     const percent = quotation ? 100 : Math.min(100, Math.max(0, Number(schedule?.querySelector('[name="schedule_percent[]"]').value) || 0));
     const subtotal = form.querySelector('[name="subtotal"]');
-    const value = rounded(netBase * percent / 100);
+    const value = rounded(rounded(netBase * percent / 100) + (financialLocked ? Number(form.dataset.roundingAdjustment || 0) : 0));
+    const priceBeforeDiscount = financialLocked && !quotation ? Number(form.dataset.priceTotal) : rounded(sum * percent / 100);
     subtotal.value = value.toFixed(2);
     form.querySelector('[data-sales-base-total]').value = money(sum);
     form.querySelector('[data-sales-net-base]').value = money(netBase);
     form.querySelector('[data-billing-base-panel]').hidden = quotation;
-    form.querySelector('[data-billing-formula]').textContent = 'ยอดหลังส่วนลด ฿' + money(netBase) + ' × ' + percent + '% = ฿' + money(value) + ' (ก่อนหัก ณ ที่จ่าย)' + (discount ? ' · ส่วนลดเฉลี่ยงวดนี้ ฿' + money(rounded(rounded(sum * percent / 100) - value)) : '');
+    form.querySelector('[data-billing-formula]').textContent = 'ยอดหลังส่วนลด ฿' + money(netBase) + ' × ' + percent + '% = ฿' + money(value) + ' (ก่อนหัก ณ ที่จ่าย)' + (discount ? ' · ส่วนลดเฉลี่ยงวดนี้ ฿' + money(Math.max(0, rounded(priceBeforeDiscount - value))) : '') + (financialLocked && Number(form.dataset.roundingAdjustment || 0) ? ' · ปรับเศษสตางค์งวดสุดท้ายให้รวมตรง QO' : '');
     form.querySelector('[data-subtotal-label]').textContent = quotation ? 'ราคาสุทธิหลังส่วนลด (คำนวณอัตโนมัติ)' : 'มูลค่างวดนี้หลังส่วนลด (คำนวณอัตโนมัติ)';
-    const wht = rounded(Math.min(100, Math.max(0, Number(form.querySelector('[name="wht_rate"]').value) || 0)) * value / 100);
+    const wht = financialLocked && !quotation ? Number(form.dataset.whtAmount) : rounded(Math.min(100, Math.max(0, Number(form.querySelector('[name="wht_rate"]').value) || 0)) * value / 100);
     form.querySelector('[data-sales-wht]').textContent = money(wht);
     form.querySelector('[data-sales-total]').textContent = money(rounded(value - wht));
     updateSchedule(netBase);
@@ -88,23 +97,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!schedule) return;
     const quotation = form.dataset.documentType === 'quotation';
     schedule.querySelector('[data-schedule-heading]').textContent = quotation ? 'แผนงวดชำระเงิน / Terms of Payment' : 'งวดที่เรียกเก็บในใบนี้';
-    schedule.querySelector('[data-add-schedule]').hidden = !quotation;
+    schedule.querySelector('[data-add-schedule]').hidden = !quotation || financialLocked;
     const preview = schedule.querySelector('[data-schedule-preview]');
     preview.replaceChildren();
     const heading = document.createElement('p'); heading.textContent = 'Terms of Payment :';
     preview.append(heading);
     let total = 0;
+    const planned = [...schedule.querySelectorAll('[data-schedule-row]')].filter(row => Number(row.querySelector('[name="schedule_percent[]"]').value) > 0);
+    const balanced = quotation && Math.abs(planned.reduce((sum, row) => sum + Number(row.querySelector('[name="schedule_percent[]"]').value), 0) - 100) < 0.001;
+    let allocated = 0;
     schedule.querySelectorAll('[data-schedule-row]').forEach((row, index) => {
       const active = quotation || index === 0;
       row.hidden = !active;
       row.querySelectorAll('input,textarea').forEach(input => input.disabled = !active);
-      row.querySelector('[data-remove-schedule]').hidden = !quotation;
+      row.querySelector('[data-remove-schedule]').hidden = !quotation || financialLocked;
       if (!active) return;
       row.querySelector('[data-schedule-label]').textContent = 'งวดที่ ' + (quotation ? index + 1 : Math.max(1, Number(form.querySelector('[name="installment_no"]').value) || 1));
       const input = row.querySelector('[name="schedule_percent[]"]');
       const percent = Number(input.value || 0);
       total += percent;
-      row.querySelector('[data-schedule-amount]').textContent = '฿' + money(rounded(base * Math.min(100, Math.max(0, percent)) / 100));
+      let amount = rounded(base * Math.min(100, Math.max(0, percent)) / 100);
+      if (balanced) amount = Math.max(0, rounded(row === planned.at(-1) ? base - allocated : Math.min(base - allocated, amount)));
+      if (!quotation && financialLocked) amount = Number(form.querySelector('[name="subtotal"]').value);
+      allocated = rounded(allocated + amount);
+      row.querySelector('[data-schedule-amount]').textContent = '฿' + money(amount);
       const descriptionInput = row.querySelector('textarea');
       descriptionInput.required = percent > 0;
       const description = descriptionInput.value.trim();
