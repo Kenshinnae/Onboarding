@@ -42,3 +42,12 @@ body *{visibility:hidden!important}
 .sales-schedule [data-schedule-total]{color:#167248;font-weight:700}
 .sales-schedule [data-schedule-total].is-invalid{color:#b12b2b}
 @media(max-width:700px){.sales-schedule-row{grid-template-columns:1fr 100px}.sales-schedule-row label:nth-of-type(2){grid-column:1/-1}.sales-schedule-row [data-remove-schedule]{grid-column:2;justify-self:end}.sales-schedule .sales-panel-head{align-items:flex-start;flex-direction:column}}
+
+/* Header, detail rows and totals share one amount-column geometry. */
+.sales-document-sheet{--sales-rule:1px;--sales-code-width:14mm;--sales-amount-width:35mm}
+.sales-doc-columns,.sales-doc-line{grid-template-columns:var(--sales-code-width) minmax(0,1fr) var(--sales-amount-width)}
+.sales-doc-body:before{left:calc(var(--sales-code-width) - var(--sales-rule))}
+.sales-doc-body:after{left:auto;right:var(--sales-amount-width)}
+.sales-doc-footer{align-items:start}
+.sales-doc-totals{align-self:start}
+.sales-doc-totals>div{grid-template-columns:minmax(0,1fr) calc(var(--sales-amount-width) + var(--sales-rule))}
