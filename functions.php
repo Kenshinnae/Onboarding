@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'CO_THEME_VERSION', '1.0.0' );
 define( 'CO_THEME_DIR', get_template_directory() );
 
-foreach ( array( 'cpt', 'security', 'submissions', 'email', 'rest-api', 'admin', 'ma-tracker', 'project-crm' ) as $file ) {
+foreach ( array( 'cpt', 'security', 'submissions', 'email', 'rest-api', 'admin', 'ma-tracker', 'project-crm', 'sales-documents' ) as $file ) {
 	require_once CO_THEME_DIR . '/inc/' . $file . '.php';
 }
 
