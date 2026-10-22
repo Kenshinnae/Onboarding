@@ -98,10 +98,9 @@ function co_sales_render_paper( $id ) {
 		<div data-print-header><?php co_sales_print_header( $id, $type, $client, $issuer ); ?></div>
 		<div data-print-rows>
 		<?php if ( 'quotation' !== $type ) : ?><div class="sales-doc-line strong"><span></span><span><?php echo esc_html( co_sales_meta( $id, 'title' ) ); ?></span><strong><?php echo esc_html( co_sales_money( co_sales_document_total( $id ) ) ); ?></strong></div><?php endif; ?>
-		<?php $terms_printed = false; foreach ( $items as $item ) :
+		<?php foreach ( $items as $item ) :
 			$lines = explode( "\n", $item['text'] );
 			foreach ( $lines as $index => $line ) :
-				if ( ! $terms_printed && $schedule && preg_match( '/^Retaining\s*&\s*Maintenance/u', trim( $line ) ) ) { co_sales_print_terms( $schedule, co_sales_meta( $id, 'wht_rate', 3 ) ); $terms_printed = true; }
 				$strong = preg_match( '/^(Project |Web strategic|Website Branding|Customize|การดูแล|Multiple |\(ภาษาที่|Retaining|โดยการ|สิ่งที่|สิทธิ|ระยะเวลา|\(ขึ้นอยู่)/u', trim( $line ) );
 				$classes = $strong ? ' strong' : '';
 				if ( preg_match( '/^(Project Concept|Project Execution|Customize Function|การดูแลครอบคลุมถึง|Multiple Languages|Retaining & Maintenance|สิ่งที่ลูกค้า|ระยะเวลา)/u', trim( $line ) ) ) $classes .= ' is-section';
@@ -109,7 +108,7 @@ function co_sales_render_paper( $id ) {
 				if ( '' === trim( $line ) ) $classes .= ' is-blank'; ?>
 				<div class="sales-doc-line<?php echo esc_attr( $classes ); ?>"><span></span><span><?php echo $line === '' ? '&nbsp;' : esc_html( $line ); ?></span><strong><?php if ( ( str_starts_with( $item['text'], 'Project Concept :' ) ? 1 : 0 ) === $index && 'quotation' === $type && '' !== $item['amount'] ) echo esc_html( co_sales_money( $item['amount'] ) ); ?></strong></div>
 			<?php endforeach;
-		endforeach; if ( ! $terms_printed && $schedule ) co_sales_print_terms( $schedule, co_sales_meta( $id, 'wht_rate', 3 ) ); ?>
+		endforeach; if ( $schedule ) co_sales_print_terms( $schedule, co_sales_meta( $id, 'wht_rate', 3 ) ); ?>
 		<?php if ( co_sales_meta( $id, 'notes' ) ) : ?><div class="sales-doc-line"><span></span><span><?php echo nl2br( esc_html( co_sales_meta( $id, 'notes' ) ) ); ?></span><span></span></div><?php endif; ?>
 		</div>
 		<div data-print-footer><div class="sales-doc-footer"><div class="sales-doc-payment"><?php if ( in_array( $type, array( 'quotation', 'invoice' ), true ) ) : ?><b>การชำระเงิน / Payment</b><div><?php echo nl2br( esc_html( $issuer['bank'] ?? '' ) ); ?></div><?php endif; ?></div><div class="sales-doc-totals"><div><span>ราคาสุทธิสินค้า (บาท) / Pre-WHT Amount</span><b><?php echo esc_html( co_sales_money( co_sales_document_total( $id ) ) ); ?></b></div><div><span>จำนวนหัก ณ ที่จ่าย <?php echo esc_html( co_sales_meta( $id, 'wht_rate', 3 ) ); ?>% (บาท) / WHT</span><b><?php echo esc_html( co_sales_money( co_sales_wht( $id ) ) ); ?></b></div><div><span>จำนวนเงินรวมทั้งสิ้น (บาท) / Grand Total</span><b><?php echo esc_html( co_sales_money( co_sales_grand_total( $id ) ) ); ?></b></div><div class="sales-doc-baht"><?php echo esc_html( co_sales_baht_text( co_sales_grand_total( $id ) ) ); ?></div></div></div><div class="sales-doc-signatures"><div><p>อนุมัติโดย / Approved by</p><div class="signature-space"><?php if ( $signature ) : ?><img src="<?php echo esc_url( $signature ); ?>" alt="ลายเซ็นผู้ออกเอกสาร"><?php endif; ?></div><p>วันที่ / Date <?php echo esc_html( co_sales_date( co_sales_meta( $id, 'issue_date' ) ) ); ?></p></div><div><p>ยอมรับ<?php echo 'receipt' === $type ? 'ใบเสร็จรับเงิน' : ( 'invoice' === $type ? 'ใบแจ้งหนี้' : 'ใบเสนอราคา' ); ?> / Accepted by</p><div class="signature-space dotted"></div><p>วันที่ / Date..........................</p></div></div></div>
