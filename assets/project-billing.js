@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.sales-project-client').forEach(form => {
+    form.addEventListener('submit', () => {
+      const button = form.querySelector('button');
+      if (button) { button.disabled = true; button.textContent = 'กำลังเชื่อมลูกค้า…'; }
+    });
+  });
+  const clientNotice = document.querySelector('.sales-project-client-success');
+  if (clientNotice) requestAnimationFrame(() => clientNotice.scrollIntoView({block: 'center'}));
   document.querySelectorAll('[name="existing_payment"]').forEach(select => {
     const date = select.closest('form').querySelector('[name="paid_date"]');
     const original = date.value;

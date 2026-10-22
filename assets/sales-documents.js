@@ -66,6 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const discount = rounded(Math.min(sum, Math.max(0, enteredDiscount)));
     const netBase = rounded(sum - discount);
     const quotation = form.dataset.documentType === 'quotation';
+    const installment = form.querySelector('[name="installment_no"]');
+    form.querySelector('[data-document-installment]').hidden = quotation;
+    installment.type = quotation ? 'hidden' : 'number';
+    installment.value = quotation ? '0' : String(Math.max(1, Number(installment.value) || 1));
     const percent = quotation ? 100 : Math.min(100, Math.max(0, Number(schedule?.querySelector('[name="schedule_percent[]"]').value) || 0));
     const subtotal = form.querySelector('[name="subtotal"]');
     const value = rounded(rounded(netBase * percent / 100) + (financialLocked ? Number(form.dataset.roundingAdjustment || 0) : 0));

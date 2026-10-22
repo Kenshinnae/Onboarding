@@ -26,7 +26,7 @@ add_action( 'admin_enqueue_scripts', function () {
 	wp_enqueue_style( 'co-sales-documents', get_template_directory_uri() . '/assets/sales-documents.css', array(), filemtime( CO_THEME_DIR . '/assets/sales-documents.css' ) );
 } );
 
-function co_sales_meta( $id, $key, $default = '' ) { $value = get_post_meta( $id, '_sales_' . $key, true ); return '' === $value ? $default : $value; }
+function co_sales_meta( $id, $key, $default = '' ) { if ( ! absint( $id ) ) return $default; $value = get_post_meta( $id, '_sales_' . $key, true ); return '' === $value ? $default : $value; }
 function co_sales_clients() { return get_posts( array( 'post_type' => 'sales_client', 'post_status' => 'publish', 'numberposts' => -1, 'orderby' => 'title', 'order' => 'ASC' ) ); }
 function co_sales_documents( $project_id = 0 ) { $args = array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'numberposts' => -1, 'orderby' => 'date', 'order' => 'DESC' ); if ( $project_id ) $args['meta_query'] = array( array( 'key' => '_sales_project_id', 'value' => $project_id ) ); return get_posts( $args ); }
 function co_sales_types() { return array( 'quotation' => 'Quotation', 'invoice' => 'Invoice', 'receipt' => 'Receipt' ); }
@@ -118,7 +118,7 @@ function co_sales_save_document_data() {
 	$old_project = $id ? absint( co_sales_meta( $id, 'project_id' ) ) : 0;
 	if ( $old_project && co_project_quote( $old_project ) === $id && $project_id !== $old_project ) throw new RuntimeException( 'ไม่สามารถย้าย QO หลักออกจาก Project ที่ตกลงไว้' );
 	if ( ! $id && $project_id && 'invoice' === $type ) throw new RuntimeException( 'กรุณาออก Invoice จากตารางงวดของ QO หลักใน Project' );
-	if ( 'quotation' !== $type ) $installment = max( 1, $installment );
+	$installment = 'quotation' === $type ? 0 : max( 1, $installment );
 	$parsed_date = DateTimeImmutable::createFromFormat( '!Y-m-d', $date );
 	if ( ! $parsed_date || $parsed_date->format( 'Y-m-d' ) !== $date ) throw new RuntimeException( 'วันที่เอกสารไม่ถูกต้อง' );
 	$schedule = array();

@@ -30,7 +30,7 @@ function get_post( $id ) { return $GLOBALS['posts'][$id] ?? null; }
 function get_post_type( $id ) { return get_post( $id )->post_type ?? false; }
 function get_post_status( $id ) { return get_post( $id )->post_status ?? false; }
 function get_the_title( $id ) { return get_post( $id )->post_title ?? ''; }
-function get_post_meta( $id, $key, $single = true ) { return $GLOBALS['meta'][$id][$key] ?? ''; }
+function get_post_meta( $id, $key, $single = true ) { if ( ! $id ) return false; return $GLOBALS['meta'][$id][$key] ?? ''; }
 function update_post_meta( $id, $key, $value ) { $GLOBALS['meta'][$id][$key] = $value; }
 function delete_post_meta( $id, $key ) { unset( $GLOBALS['meta'][$id][$key] ); }
 function wp_insert_post( $data, ...$args ) { $id = $data['ID'] ?? count( $GLOBALS['posts'] ) + 1; $GLOBALS['posts'][$id] = (object) array_merge( array( 'post_date' => '2026-10-01', 'post_title' => '' ), (array) get_post( $id ), $data, array( 'ID' => $id ) ); return $id; }
@@ -84,7 +84,9 @@ $client = wp_insert_post( array( 'post_type' => 'sales_client', 'post_status' =>
 update_post_meta( $client, '_sales_short_name', 'TEST' );
 $project = wp_insert_post( array( 'post_type' => 'client_project', 'post_status' => 'publish', 'post_title' => 'Website project' ) );
 update_post_meta( $project, '_crm_company', 'เจ้าของงานคนละบริษัท' ); update_post_meta( $project, '_crm_stage', 'doing' ); update_post_meta( $project, '_crm_start_date', '2026-10-01' );
-$quote = document_workflow( 0, $project );
+$quote = document_workflow( 0, $project, array( 'installment_no' => 99 ) );
+expect_workflow( co_sales_meta( $quote, 'installment_no' ) === 0, 'Quotation is not an individual installment' );
+expect_workflow( co_sales_meta( 0, 'issue_date', wp_date( 'Y-m-d' ) ) === '2026-10-22', 'new document metadata uses defaults for invalid ID zero' );
 expect_workflow( co_project_quote( $project ) === 0, 'draft quote never becomes agreement automatically' );
 rejected_workflow( fn() => co_project_derive_document( $quote, 1 ), 'select agreement before invoice' );
 action_workflow( 'admin_post_co_project_accept_quote', array( 'project_id' => $project, 'quotation_id' => $quote ) );
@@ -159,6 +161,19 @@ foreach ( array( 18000.01, .02 ) as $decimal ) {
 	for ( $n = 1; $n <= 4; $n++ ) { $part = co_project_derive_document( $money_quote, $n ); $sum += co_sales_document_total( $part ); $tax += co_sales_wht( $part ); $net += co_sales_grand_total( $part ); expect_workflow( co_sales_document_total( $part ) >= 0 && co_sales_grand_total( $part ) >= 0, 'nonnegative rounded installment' ); }
 	expect_workflow( round( $sum, 2 ) === $decimal && round( $tax, 2 ) === co_sales_wht( $money_quote ) && round( $net, 2 ) == co_sales_grand_total( $money_quote ), 'installment cents and withholding sum exactly to QO' );
 }
+$empty_project = wp_insert_post( array( 'post_type' => 'client_project', 'post_status' => 'publish', 'post_title' => 'Project without documents' ) );
+action_workflow( 'admin_post_co_project_client', array( 'project_id' => $empty_project, 'sales_client_id' => $client ) );
+expect_workflow( (int) co_crm_meta( $empty_project, 'sales_client_id' ) === $client, 'billing client button links selected client' );
+$_GET = array( 'client_linked' => $empty_project ); ob_start(); co_project_render_billing( $empty_project ); $empty_hub = ob_get_clean();
+expect_workflow( str_contains( $empty_hub, 'role="status"' ) && str_contains( $empty_hub, 'เชื่อมลูกค้าสำหรับออกบิลแล้ว' ), 'client link displays scoped success notice' );
+expect_workflow( str_contains( $empty_hub, 'ยังไม่มีเอกสารที่เชื่อมกับ Project นี้' ) && str_contains( $empty_hub, 'co-sales-edit&amp;project=' . $empty_project ), 'empty documents show explanation and create action' );
+$_GET = array( 'project' => $empty_project ); ob_start(); co_sales_edit_page(); $new_quote_form = ob_get_clean();
+expect_workflow( str_contains( $new_quote_form, 'name="issue_date" value="2026-10-22"' ), 'new Quotation date preselected today' );
+expect_workflow( str_contains( $new_quote_form, 'data-document-installment hidden' ) && str_contains( $new_quote_form, 'type="hidden" name="installment_no" value="0"' ), 'no individual installment input on Quotation' );
+expect_workflow( str_contains( $new_quote_form, 'data-sales-schedule' ), 'existing Terms of Payment remains' );
+$_GET = array( 'document' => $quote ); update_post_meta( $quote, '_sales_issue_date', '2026-10-14' ); ob_start(); co_sales_edit_page(); $saved_quote_form = ob_get_clean();
+expect_workflow( str_contains( $saved_quote_form, 'name="issue_date" value="2026-10-14"' ), 'saved document keeps historical issue date' );
+update_post_meta( $quote, '_sales_issue_date', '2026-10-22' );
 $mode = $argv[1] ?? 'test';
 if ( $mode !== 'test' ) {
 	$_GET = array( 'project' => $project, 'document' => $invoice );
@@ -166,6 +181,8 @@ if ( $mode !== 'test' ) {
 	if ( $mode === 'pipeline' ) co_crm_dashboard();
 	elseif ( $mode === 'detail' ) co_crm_detail();
 	elseif ( $mode === 'quote' ) { $_GET['document'] = $quote; co_sales_edit_page(); }
+	elseif ( $mode === 'new-quote' || $mode === 'new-invoice' ) { $_GET = array( 'type' => $mode === 'new-quote' ? 'quotation' : 'invoice' ); co_sales_edit_page(); }
+	elseif ( $mode === 'empty-project' ) { $_GET = array( 'client_linked' => $empty_project ); co_crm_assets(); echo $empty_hub; }
 	elseif ( $mode === 'pending-invoice' ) { $_GET['document'] = $second; co_sales_edit_page(); }
 	elseif ( $mode === 'unpaid-invoice' ) { $_GET['document'] = $pending_invoice; co_sales_edit_page(); }
 	elseif ( $mode === 'report' ) { $_GET['report_year'] = 2026; co_crm_report(); }

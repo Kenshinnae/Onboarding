@@ -203,7 +203,9 @@ function co_sales_assert_financials( $id, $items, $discount, $schedule ) {
 	$changed = $amounts( $items ) !== $amounts( co_sales_items( $id ) ) || $discount !== round( (float) co_sales_meta( $id, 'discount', 0 ), 2 ) || (float) ( $_POST['wht_rate'] ?? 3 ) !== (float) co_sales_meta( $id, 'wht_rate', 3 ) || $schedule !== co_sales_billing_schedule( $id );
 	$percent = 'quotation' === co_sales_meta( $id, 'document_type' ) ? 100 : (float) ( $schedule[0]['percent'] ?? 0 );
 	if ( abs( co_sales_installment_value( co_sales_discounted_base( co_sales_items_value( $items ), $discount ), $percent ) + (float) co_sales_meta( $id, 'rounding_adjustment', 0 ) - co_sales_document_total( $id ) ) > .004 ) $changed = true;
-	foreach ( array( 'project_id', 'client_id', 'source_document_id', 'installment_no' ) as $key ) if ( absint( $_POST[$key] ?? 0 ) !== absint( co_sales_meta( $id, $key ) ) ) $changed = true;
+	$identity_keys = array( 'project_id', 'client_id', 'source_document_id' );
+	if ( 'quotation' !== co_sales_meta( $id, 'document_type' ) ) $identity_keys[] = 'installment_no';
+	foreach ( $identity_keys as $key ) if ( absint( $_POST[$key] ?? 0 ) !== absint( co_sales_meta( $id, $key ) ) ) $changed = true;
 	if ( $changed ) throw new RuntimeException( 'ราคา ลูกค้า Project และแผนงวดถูกล็อกแล้ว เพื่อรักษาข้อตกลงและยอดรับเงินจริงเดิม' );
 }
 
@@ -230,16 +232,17 @@ function co_project_render_billing( $project ) {
 	$finance = co_project_financials( $project ); $quote = $finance['quote']; $docs = co_sales_documents( $project ); ?>
 	<section class="crm-drawer-section sales-project-hub"><div class="crm-section-heading"><div><h3>ข้อตกลง เอกสาร และงวดชำระ</h3><p>ราคาและงวดอ้างอิง QO ที่ลูกค้าตกลง รับเงินตาม Invoice แล้วออก Receipt ภายหลังได้</p></div><a class="crm-btn" href="<?php echo esc_url( admin_url( $quote ? 'admin.php?page=co-sales-edit&document=' . $quote : 'admin.php?page=co-sales-edit&project=' . $project ) ); ?>"><?php echo $quote ? 'เปิด QO หลัก' : '+ Quotation'; ?></a></div>
 	<?php co_project_render_client( $project ); ?>
-	<?php if ( ! $quote ) : ?><p>ยังไม่ได้เลือก QO หลัก — เลือกใบที่ลูกค้าตกลงด้านล่าง ข้อมูลราคาเดิมยังคงอยู่</p><?php endif; ?>
+	<?php if ( ! $quote ) : ?><p><?php echo $docs ? 'ยังไม่ได้เลือก QO หลัก — เลือกใบที่ลูกค้าตกลงด้านล่าง ข้อมูลราคาเดิมยังคงอยู่' : 'ยังไม่มี QO ที่เชื่อมกับ Project นี้ — สร้าง Quotation ใหม่ หรือเปิด QO เดิมแล้วเลือก Project นี้ก่อน ข้อมูลราคาเดิมยังคงอยู่'; ?></p><?php endif; ?>
 	<div class="sales-project-docs"><?php foreach ( $docs as $doc ) : if ( 'quotation' !== co_sales_meta( $doc->ID, 'document_type' ) ) continue; ?><article><?php echo co_sales_document_link( $doc->ID ); co_project_render_accept( $doc->ID, $project ); ?></article><?php endforeach; ?></div>
 	<?php if ( $quote ) co_sales_render_quote_progress( $quote, true ); ?>
-	<details class="sales-project-archive"><summary>เอกสารทั้งหมดของ Project</summary><div class="sales-project-docs"><?php foreach ( $docs as $doc ) : ?><article><?php echo co_sales_document_link( $doc->ID ); ?><small><?php echo esc_html( co_sales_types()[co_sales_meta( $doc->ID, 'document_type' )] ?? '' ); ?></small><strong>฿<?php echo esc_html( co_sales_money( co_sales_grand_total( $doc->ID ) ) ); ?></strong></article><?php endforeach; ?></div></details>
+	<details class="sales-project-archive"><summary>เอกสารทั้งหมดของ Project (<?php echo count( $docs ); ?>)</summary><div class="sales-project-docs"><?php foreach ( $docs as $doc ) : ?><article><?php echo co_sales_document_link( $doc->ID ); ?><small><?php echo esc_html( co_sales_types()[co_sales_meta( $doc->ID, 'document_type' )] ?? '' ); ?></small><strong>฿<?php echo esc_html( co_sales_money( co_sales_grand_total( $doc->ID ) ) ); ?></strong></article><?php endforeach; ?><?php if ( ! $docs ) : ?><article><p>ยังไม่มีเอกสารที่เชื่อมกับ Project นี้ ใบที่เลือก “ไม่เชื่อม Project” จะไม่แสดงในส่วนนี้</p><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-edit&project=' . $project ) ); ?>">+ สร้าง Quotation ของ Project นี้</a><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-documents&type=quotation' ) ); ?>">เปิดรายการ Quotation เดิมเพื่อเลือกเชื่อม Project →</a></article><?php endif; ?></div></details>
 	<?php $old = co_project_unallocated_payments( $project ); if ( $old ) : ?><div class="sales-billing-warning"><strong>รับเงินเดิมที่ยังไม่จับคู่ (<?php echo count( $old ); ?>)</strong><p>ยอดเหล่านี้นับในเงินรับแล้ว ไม่ต้องกรอกเพิ่ม ให้เลือกจับคู่จาก Invoice ที่ตรงกัน</p><?php foreach ( $old as $payment ) : ?><p><?php echo esc_html( $payment->post_title . ' · ฿' . co_sales_money( get_post_meta( $payment->ID, '_crm_amount', true ) ) . ' · ' . co_sales_date( get_post_meta( $payment->ID, '_crm_paid_date', true ) ) ); ?></p><?php endforeach; ?></div><?php endif; ?>
 	</section>
 <?php }
 
 function co_project_render_client( $project ) {
 	$quote = co_project_quote( $project ); $client = absint( get_post_meta( $project, '_crm_sales_client_id', true ) ); ?>
+	<?php if ( absint( $_GET['client_linked'] ?? 0 ) === $project && $client ) : ?><p class="sales-project-client-success" role="status">เชื่อมลูกค้าสำหรับออกบิลแล้ว: <?php echo esc_html( get_the_title( $client ) ); ?> — กด “เติมข้อมูลออกบิล” เพื่อแก้ที่อยู่ เลขผู้เสียภาษี และข้อมูลอื่น ๆ</p><?php endif; ?>
 	<form class="sales-form sales-project-client" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><?php wp_nonce_field( 'co_project_client_' . $project ); ?><input type="hidden" name="action" value="co_project_client"><input type="hidden" name="project_id" value="<?php echo $project; ?>"><label>ลูกค้าสำหรับออกบิล (เลือกต่างจากบริษัทเจ้าของงานหรือ MA ได้)<select name="sales_client_id" <?php disabled( (bool) $quote ); ?>><option value="0">สร้างลูกค้าจากข้อมูล Project</option><?php foreach ( co_sales_clients() as $item ) : ?><option value="<?php echo $item->ID; ?>" <?php selected( $client, $item->ID ); ?>><?php echo esc_html( $item->post_title ); ?></option><?php endforeach; ?></select></label><?php if ( ! $quote ) : ?><button class="sales-btn light">เชื่อมลูกค้า / สร้างจาก Project</button><?php endif; ?><?php if ( $client ) : ?><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-clients&edit_client=' . $client ) ); ?>">เติมข้อมูลออกบิล →</a><?php endif; ?></form>
 <?php }
 
@@ -262,7 +265,7 @@ add_action( 'admin_post_co_project_client', function () {
 		if ( 'sales_client' !== get_post_type( $client ) || 'publish' !== get_post_status( $client ) ) throw new RuntimeException( 'ลูกค้าไม่ถูกต้อง' );
 		update_post_meta( $project, '_crm_sales_client_id', $client );
 	} ); } catch ( RuntimeException $error ) { wp_die( esc_html( $error->getMessage() ) ); }
-	wp_safe_redirect( admin_url( 'admin.php?page=co-projects&open_project=' . $project ) ); exit;
+	wp_safe_redirect( admin_url( 'admin.php?page=co-projects&open_project=' . $project . '&client_linked=' . $project ) ); exit;
 } );
 
 function co_project_render_tasks() {
