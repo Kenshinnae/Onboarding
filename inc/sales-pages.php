@@ -1,0 +1,48 @@
+<?php
+defined( 'ABSPATH' ) || exit;
+
+function co_sales_documents_page() {
+	if ( ! current_user_can( 'edit_posts' ) ) return;
+	$type = sanitize_key( $_GET['type'] ?? 'quotation' );
+	if ( ! isset( co_sales_types()[$type] ) ) $type = 'quotation';
+	$documents = array_filter( co_sales_documents(), fn( $d ) => $type === co_sales_meta( $d->ID, 'document_type' ) );
+	co_sales_assets(); ?>
+	<div class="sales-wrap"><header class="sales-hero compact"><div><small>SALES DOCUMENTS</small><h1><?php echo esc_html( co_sales_types()[$type] ); ?></h1><p>ใบเสนอราคา ใบแจ้งหนี้ และใบเสร็จรับเงิน</p></div><a class="sales-btn white" href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-edit&type=' . $type ) ); ?>">+ สร้าง <?php echo esc_html( co_sales_types()[$type] ); ?></a></header>
+	<nav class="sales-tabs"><?php foreach ( co_sales_types() as $key => $label ) : ?><a class="<?php echo $key === $type ? 'active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-documents&type=' . $key ) ); ?>"><?php echo esc_html( $label ); ?></a><?php endforeach; ?><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-clients' ) ); ?>">ลูกค้า</a><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-settings' ) ); ?>">ตั้งค่าผู้ออกเอกสาร</a></nav>
+	<section class="sales-panel"><div class="sales-panel-head"><h2><?php echo esc_html( co_sales_types()[$type] ); ?> (<?php echo count( $documents ); ?>)</h2></div><div class="sales-table-wrap"><table><thead><tr><th>เลขที่เอกสาร</th><th>ลูกค้า</th><th>Project</th><th>วันที่</th><th>จำนวนเงินรวมทั้งสิ้น</th><th></th></tr></thead><tbody><?php foreach ( $documents as $document ) : $id = $document->ID; $client = co_sales_meta( $id, 'client_snapshot', array() ); ?><tr><td><strong><?php echo esc_html( co_sales_meta( $id, 'number' ) ); ?></strong></td><td><?php echo esc_html( $client['name'] ?? get_the_title( co_sales_meta( $id, 'client_id' ) ) ); ?></td><td><?php echo esc_html( get_the_title( absint( co_sales_meta( $id, 'project_id' ) ) ) ); ?></td><td><?php echo esc_html( co_sales_date( co_sales_meta( $id, 'issue_date' ) ) ); ?></td><td>฿<?php echo esc_html( co_sales_money( co_sales_grand_total( $id ) ) ); ?></td><td><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-edit&document=' . $id ) ); ?>">เปิดเอกสาร →</a></td></tr><?php endforeach; if ( ! $documents ) : ?><tr><td colspan="6">ยังไม่มีเอกสาร</td></tr><?php endif; ?></tbody></table></div></section></div>
+<?php }
+
+function co_sales_edit_page() {
+	if ( ! current_user_can( 'edit_posts' ) ) return;
+	$id = absint( $_GET['document'] ?? 0 );
+	if ( $id && 'sales_document' !== get_post_type( $id ) ) wp_die( 'Document not found.' );
+	$type = $id ? co_sales_meta( $id, 'document_type' ) : sanitize_key( $_GET['type'] ?? 'quotation' );
+	if ( ! isset( co_sales_types()[$type] ) ) $type = 'quotation';
+	$project_id = $id ? absint( co_sales_meta( $id, 'project_id' ) ) : absint( $_GET['project'] ?? 0 );
+	$items = $id ? co_sales_items( $id ) : co_sales_default_items();
+	if ( ! $id && $project_id ) $items[0]['amount'] = co_crm_meta( $project_id, 'net_total' );
+	co_sales_assets(); ?>
+	<div class="sales-wrap"><header class="sales-edit-head"><div><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-documents&type=' . $type ) ); ?>">← <?php echo esc_html( co_sales_types()[$type] ); ?></a><h1><?php echo esc_html( $id ? co_sales_meta( $id, 'number' ) : 'สร้าง ' . co_sales_types()[$type] ); ?></h1></div><div><?php if ( $id ) : ?><a class="sales-btn light" target="_blank" href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-preview&document=' . $id ) ); ?>">Preview / PDF ↗</a><?php if ( 'quotation' === $type ) : foreach ( (array) co_sales_meta( $id, 'payment_schedule', array() ) as $index => $row ) : ?><a class="sales-btn light" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=co_sales_derive_document&source=' . $id . '&installment=' . ( $index + 1 ) ), 'co_sales_derive_' . $id ) ); ?>">Invoice งวด <?php echo $index + 1; ?></a><?php endforeach; elseif ( 'invoice' === $type ) : ?><a class="sales-btn" data-sales-confirm="สร้าง Receipt เมื่อได้รับชำระเงินแล้ว?" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=co_sales_derive_document&source=' . $id ), 'co_sales_derive_' . $id ) ); ?>">สร้าง Receipt</a><?php endif; endif; ?></div></header>
+	<form class="sales-form sales-document-form" data-document-type="<?php echo esc_attr( $type ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><?php wp_nonce_field( 'co_sales_document' ); ?><input type="hidden" name="action" value="co_sales_save_document"><input type="hidden" name="document_id" value="<?php echo $id; ?>"><input type="hidden" name="source_document_id" value="<?php echo absint( co_sales_meta( $id, 'source_document_id' ) ); ?>">
+	<section class="sales-panel"><h2>ข้อมูลเอกสาร</h2><div class="sales-grid">
+	<label>ประเภทเอกสาร<?php if ( $id ) : ?><input readonly value="<?php echo esc_attr( co_sales_types()[$type] ); ?>"><input type="hidden" name="document_type" value="<?php echo esc_attr( $type ); ?>"><?php else : ?><select name="document_type" data-type-select><?php foreach ( co_sales_types() as $key => $label ) : ?><option value="<?php echo esc_attr( $key ); ?>" <?php selected( $type, $key ); ?>><?php echo esc_html( $label ); ?></option><?php endforeach; ?></select><?php endif; ?></label>
+	<label>ลูกค้า *<select required name="client_id"><option value="">เลือกลูกค้า</option><?php foreach ( co_sales_clients() as $client ) : ?><option value="<?php echo $client->ID; ?>" <?php selected( co_sales_meta( $id, 'client_id' ), $client->ID ); ?>><?php echo esc_html( $client->post_title ); ?></option><?php endforeach; ?></select><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-clients' ) ); ?>">เพิ่ม / แก้ไขข้อมูลลูกค้า</a></label>
+	<label>Project<select name="project_id"><option value="">ไม่เชื่อม Project</option><?php foreach ( co_crm_projects() as $project ) : ?><option value="<?php echo $project->ID; ?>" <?php selected( $project_id, $project->ID ); ?>><?php echo esc_html( $project->post_title ); ?></option><?php endforeach; ?></select></label>
+	<label>ผู้ออกเอกสาร *<select required name="issuer_id"><?php foreach ( co_sales_issuers() as $issuer ) : ?><option value="<?php echo esc_attr( $issuer['id'] ); ?>" <?php selected( co_sales_meta( $id, 'issuer_id' ), $issuer['id'] ); ?>><?php echo esc_html( $issuer['name'] ?: 'ตั้งค่าผู้ออกเอกสาร' ); ?></option><?php endforeach; ?></select></label>
+	<label>วันที่เอกสาร<input required type="date" name="issue_date" value="<?php echo esc_attr( co_sales_meta( $id, 'issue_date', wp_date( 'Y-m-d' ) ) ); ?>"></label><label>งวดที่<input min="0" type="number" name="installment_no" value="<?php echo absint( co_sales_meta( $id, 'installment_no', 'quotation' === $type ? 0 : 1 ) ); ?>"></label></div>
+	<label>ชื่อเอกสาร / รายละเอียดงวด<input name="document_title" value="<?php echo esc_attr( co_sales_meta( $id, 'title', $project_id ? get_the_title( $project_id ) : 'Website Design & Development' ) ); ?>"></label></section>
+	<section class="sales-panel"><div class="sales-panel-head"><div><h2>คำอธิบายและมูลค่างาน</h2><p>รายละเอียดตั้งต้นตามต้นฉบับ แก้ข้อความ ราคา และหน้าเริ่มต้นของแต่ละส่วนได้</p></div><button type="button" class="sales-btn light" data-add-item>+ เพิ่มรายการ</button></div><button type="button" class="sales-link" data-use-original-template>ใช้รายละเอียดตั้งต้นครบตามต้นฉบับ</button><template data-sales-default-items><?php foreach ( co_sales_default_items() as $index => $item ) co_sales_item_editor( $item, $index ); ?></template><div data-sales-items><?php foreach ( $items as $index => $item ) co_sales_item_editor( $item, $index ); ?></div>
+	<label>Terms of Payment :<textarea name="payment_schedule" rows="6"><?php echo esc_textarea( co_sales_meta( $id, 'payment_schedule_text', co_sales_default_schedule_text() ) ); ?></textarea><small>หนึ่งงวดต่อบรรทัด: เปอร์เซ็นต์|รายละเอียด (เช่น 30|หลังวางโครงแบบและออกแบบแล้วเสร็จ)</small></label>
+	<div class="sales-grid finance"><label><?php echo 'quotation' === $type ? 'ราคาสุทธิรวมทุกรายการ' : 'มูลค่างวดนี้'; ?><input required min="0" step=".01" type="number" name="subtotal" <?php echo 'quotation' === $type ? 'readonly' : ''; ?> value="<?php echo esc_attr( co_sales_document_total( $id ) ); ?>"></label><label>หัก ณ ที่จ่าย (%)<input type="number" min="0" max="100" step=".01" name="wht_rate" value="<?php echo esc_attr( co_sales_meta( $id, 'wht_rate', 3 ) ); ?>"></label><div><small>จำนวนหัก ณ ที่จ่าย</small><strong>฿<span data-sales-wht></span></strong></div><div><small>จำนวนเงินรวมทั้งสิ้น</small><strong>฿<span data-sales-total></span></strong></div></div>
+	<label>หมายเหตุ<textarea name="notes" rows="3"><?php echo esc_textarea( co_sales_meta( $id, 'notes' ) ); ?></textarea></label></section>
+	<div class="sales-actions"><button name="preview_after_save" value="1" type="submit" class="sales-btn light">บันทึกและ Preview</button><button type="submit" class="sales-btn">บันทึก <?php echo esc_html( co_sales_types()[$type] ); ?></button></div></form></div>
+<?php }
+
+function co_sales_preview_page() {
+	if ( ! current_user_can( 'edit_posts' ) ) return;
+	$id = absint( $_GET['document'] ?? 0 );
+	if ( 'sales_document' !== get_post_type( $id ) ) wp_die( 'Document not found.' );
+	co_sales_assets(); ?>
+	<div class="sales-preview-toolbar"><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-edit&document=' . $id ) ); ?>">← แก้ไข <?php echo esc_html( co_sales_types()[co_sales_meta( $id, 'document_type' )] ); ?></a><button class="sales-btn" onclick="window.print()">Print / Save PDF</button></div>
+	<?php co_sales_render_paper( $id );
+}
