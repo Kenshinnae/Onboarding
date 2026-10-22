@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (add) {
       const list = form.querySelector('[data-sales-items]');
       const row = list.firstElementChild.cloneNode(true);
-      row.querySelectorAll('input,textarea').forEach(el => el.value = el.name === 'item_page[]' ? '1' : '');
+      row.querySelectorAll('input,textarea').forEach(el => el.value = '');
       list.append(row);
       row.querySelector('textarea').focus();
     }
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!source || !output) return;
   const build = () => {
     output.replaceChildren();
-    let sheet, body, requested = 1;
+    let sheet, body;
     const nextPage = () => {
       sheet = document.createElement('section'); sheet.className = 'sales-document-sheet';
       sheet.append(source.querySelector('[data-print-header]').firstElementChild.cloneNode(true));
@@ -93,8 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     nextPage();
     for (const original of source.querySelector('[data-print-rows]').children) {
-      const page = Number(original.dataset.page || 1);
-      if (page > requested) { if (body.children.length && output.children.length < page) nextPage(); requested = page; }
       const row = original.cloneNode(true); body.append(row);
       if ((sheet.scrollHeight > sheet.clientHeight + 1 || body.scrollHeight > body.clientHeight + 1) && body.children.length > 1) {
         row.remove();

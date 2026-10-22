@@ -130,7 +130,7 @@ add_action( 'admin_post_co_sales_save_document', function () {
 	$issuer = co_sales_issuer( sanitize_key( $_POST['issuer_id'] ?? '' ) ); $client = get_post( $client_id );
 	$items = array();
 	foreach ( (array) ( $_POST['item_text'] ?? array() ) as $i => $text ) {
-		$items[] = array( 'text' => sanitize_textarea_field( wp_unslash( $text ) ), 'amount' => '' === ( $_POST['item_amount'][$i] ?? '' ) ? '' : max( 0, round( (float) $_POST['item_amount'][$i], 2 ) ), 'page' => max( 1, min( 99, absint( $_POST['item_page'][$i] ?? 1 ) ) ) );
+		$items[] = array( 'text' => sanitize_textarea_field( wp_unslash( $text ) ), 'amount' => '' === ( $_POST['item_amount'][$i] ?? '' ) ? '' : max( 0, round( (float) $_POST['item_amount'][$i], 2 ) ) );
 	}
 	if ( $items ) update_post_meta( $id, '_sales_items', $items );
 	update_post_meta( $id, '_sales_body', implode( "\n\n", array_column( $items, 'text' ) ) );

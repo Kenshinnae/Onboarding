@@ -20,12 +20,12 @@ function co_sales_sync_payment( $id ) {
 
 function co_sales_default_items() {
 	return array(
-		array( 'page' => 1, 'text' => "Project Concept :\nWeb strategic Planning :\n- Creative Strategic Direction - วางแผนกำหนดแนวคิดในการสื่อสารที่เหมาะสมกับแบรนด์\n- Communication Strategy - ออกแบบการสื่อสารของแบรนด์\n- User Behavior Flow (UX Strategic) - ออกแบบการใช้งานที่เหมาะสมของเว็บไซต์\n- Customer Experience - วางแผนสร้างประสบการณ์ที่ดีสำหรับผู้ใช้งาน\n- Brand Perception - สร้างการจดจำของแบรนด์\n- Engagement & Conversion - เพิ่มการมีส่วนร่วมกับแบรนด์ในมิติต่างๆ\n- Measurement & Analysis - วางแผนการวัดผลในมิติต่างๆ ให้รอบด้าน\n- Optimization - วางกรอบแนวทางในการปรับปรุงหลังการใช้งานแล้ว\n- Reach Goal - ผลักดันให้งานบรรลุเป้าหมาย\n- Compettitor Analysis - วิเคราะห์คู่แข่งเทียบเคียง\n- Website Benchmark - หาตัวอย่างมาตรฐานที่เหมาะสมที่จะนำมาใช้งาน\n- Scope of Works - กำหนดกรอบของความรับผิดชอบทั้งหมดตลอดอายุสัญญา\n- Wireframe - ออกแบบร่างหน้าจอต่างๆ อุปกรณ์มือถือ\n\nProject Execution :\nWebsite Branding - ออกแบบและพัฒนาเว็บไซต์นำเสนอภาพลักษณ์แบรนด์\n- Home Page\n- Our Curriculums (Certified ISO 9001 / British Curriulum Pearson Edexcel)\n- Preschool English Course (Playground / Early Years)\n- Primary (Skill Improvement / Conversation)\n- iLower Secondary\n- Pre University (IELTS / TOEIC / TOEFL Preparation)\n- Academic / Research Skills (Academic Writing / English For Presentation)\n- English For Adults (Business English / Born to be)\n- Certified Tutor\n- English Test (CEFR Placement Test / Mock IELTS)\n- Exam Centre\n- About EFL\n- Organization\n- Awards of Excellence\n- Testimonials\n- Gallery\n- News / Detail page\n- Become Our Partner School\n- Blog / Detail Blog", 'amount' => '' ),
-		array( 'page' => 2, 'text' => "- Contact us (Location 1 / Location 2)\n- Thank you page", 'amount' => '' ),
-		array( 'page' => 2, 'text' => "Customize Function\n- ปรับแต่งฟังก์ชันการอัปโหลดเนื้อหาข้อมูลบนเว็บไซต์", 'amount' => '' ),
-		array( 'page' => 2, 'text' => "การดูแลครอบคลุมถึง\n- Mobile & Tablet Responsive Design\n- PDPA - พรบคุ้มครองข้อมูลส่วนบุคคล\n- User Manual Website\n- Free Server 1 Year ( Value 1,500 baht)", 'amount' => '' ),
-		array( 'page' => 2, 'text' => "Multiple Languages - เว็บไซต์ 3 ภาษา EN-TH-CN\n(ภาษาที่2 คิดภาษาละ 20% ของราคางานสุทธิ)", 'amount' => '' ),
-		array( 'page' => 3, 'text' => "Retaining & Maintenance [Free]\nWebsite Warranted      6 months  [ประกันผลงานการทำงานของเว็บไซต์]\nWebsite Maintenance   6 months  [ดูแลแนะนำให้คำปรึกษาแนะนำและปรับแต่งเว็บไซต์]\nในการดูแลรักษาทีมเราจะช่วยดูแลรักษาเว็บไซต์หลังขึ้นเว็บไซต์ออนไลน์ตามระยะสัญญา\nโดยการทำงานจะคิดเป็น เดือนละ 20 ชั่วโมง เราจะดูแลให้ 4 หัวข้อใหญ่ดังนี้\n- Bug fixed (แก้ไขบั๊คที่เจอ)\n- Technical Support (อัพเดท Theme, Plugins, wordpress, Backup site)\n- Content Update (ช่วยลงข้อมูล แก้ไขรูปภาพ แก้ไขข้อความ)\n- Compatibility and Performance Monitoring across browsers and devices\n(มอร์นิเตอร์เว็บไซต์ ความเร็วในการโหลด, ภาพรวมเว็บไซต์)\n\nสิ่งที่ลูกค้าจะได้รับ :\nสิทธิในการเป็นเจ้าของงานออกแบบทั้งหมด\nสิทธิในการเป็นเจ้าของและเข้าถึงข้อมูลเว็บไซต์ทั้งหมด\n\nระยะเวลาในการทำงาน : 65 วัน\n(ขึ้นอยู่กับการเตรียมพร้อมข้อมูลจริงที่จะใช้บนระบบและเว็บไซต์)", 'amount' => '' ),
+		array( 'text' => "Project Concept :\nWeb strategic Planning :\n- Creative Strategic Direction - วางแผนกำหนดแนวคิดในการสื่อสารที่เหมาะสมกับแบรนด์\n- Communication Strategy - ออกแบบการสื่อสารของแบรนด์\n- User Behavior Flow (UX Strategic) - ออกแบบการใช้งานที่เหมาะสมของเว็บไซต์\n- Customer Experience - วางแผนสร้างประสบการณ์ที่ดีสำหรับผู้ใช้งาน\n- Brand Perception - สร้างการจดจำของแบรนด์\n- Engagement & Conversion - เพิ่มการมีส่วนร่วมกับแบรนด์ในมิติต่างๆ\n- Measurement & Analysis - วางแผนการวัดผลในมิติต่างๆ ให้รอบด้าน\n- Optimization - วางกรอบแนวทางในการปรับปรุงหลังการใช้งานแล้ว\n- Reach Goal - ผลักดันให้งานบรรลุเป้าหมาย\n- Compettitor Analysis - วิเคราะห์คู่แข่งเทียบเคียง\n- Website Benchmark - หาตัวอย่างมาตรฐานที่เหมาะสมที่จะนำมาใช้งาน\n- Scope of Works - กำหนดกรอบของความรับผิดชอบทั้งหมดตลอดอายุสัญญา\n- Wireframe - ออกแบบร่างหน้าจอต่างๆ อุปกรณ์มือถือ\n\nProject Execution :\nWebsite Branding - ออกแบบและพัฒนาเว็บไซต์นำเสนอภาพลักษณ์แบรนด์\n- Home Page\n- Our Curriculums (Certified ISO 9001 / British Curriulum Pearson Edexcel)\n- Preschool English Course (Playground / Early Years)\n- Primary (Skill Improvement / Conversation)\n- iLower Secondary\n- Pre University (IELTS / TOEIC / TOEFL Preparation)\n- Academic / Research Skills (Academic Writing / English For Presentation)\n- English For Adults (Business English / Born to be)\n- Certified Tutor\n- English Test (CEFR Placement Test / Mock IELTS)\n- Exam Centre\n- About EFL\n- Organization\n- Awards of Excellence\n- Testimonials\n- Gallery\n- News / Detail page\n- Become Our Partner School\n- Blog / Detail Blog", 'amount' => '' ),
+		array( 'text' => "- Contact us (Location 1 / Location 2)\n- Thank you page", 'amount' => '' ),
+		array( 'text' => "Customize Function\n- ปรับแต่งฟังก์ชันการอัปโหลดเนื้อหาข้อมูลบนเว็บไซต์", 'amount' => '' ),
+		array( 'text' => "การดูแลครอบคลุมถึง\n- Mobile & Tablet Responsive Design\n- PDPA - พรบคุ้มครองข้อมูลส่วนบุคคล\n- User Manual Website\n- Free Server 1 Year ( Value 1,500 baht)", 'amount' => '' ),
+		array( 'text' => "Multiple Languages - เว็บไซต์ 3 ภาษา EN-TH-CN\n(ภาษาที่2 คิดภาษาละ 20% ของราคางานสุทธิ)", 'amount' => '' ),
+		array( 'text' => "Retaining & Maintenance [Free]\nWebsite Warranted      6 months  [ประกันผลงานการทำงานของเว็บไซต์]\nWebsite Maintenance   6 months  [ดูแลแนะนำให้คำปรึกษาแนะนำและปรับแต่งเว็บไซต์]\nในการดูแลรักษาทีมเราจะช่วยดูแลรักษาเว็บไซต์หลังขึ้นเว็บไซต์ออนไลน์ตามระยะสัญญา\nโดยการทำงานจะคิดเป็น เดือนละ 20 ชั่วโมง เราจะดูแลให้ 4 หัวข้อใหญ่ดังนี้\n- Bug fixed (แก้ไขบั๊คที่เจอ)\n- Technical Support (อัพเดท Theme, Plugins, wordpress, Backup site)\n- Content Update (ช่วยลงข้อมูล แก้ไขรูปภาพ แก้ไขข้อความ)\n- Compatibility and Performance Monitoring across browsers and devices\n(มอร์นิเตอร์เว็บไซต์ ความเร็วในการโหลด, ภาพรวมเว็บไซต์)\n\nสิ่งที่ลูกค้าจะได้รับ :\nสิทธิในการเป็นเจ้าของงานออกแบบทั้งหมด\nสิทธิในการเป็นเจ้าของและเข้าถึงข้อมูลเว็บไซต์ทั้งหมด\n\nระยะเวลาในการทำงาน : 65 วัน\n(ขึ้นอยู่กับการเตรียมพร้อมข้อมูลจริงที่จะใช้บนระบบและเว็บไซต์)", 'amount' => '' ),
 	);
 }
 
@@ -37,7 +37,7 @@ function co_sales_items( $id ) {
 	$items = co_sales_meta( $id, 'items', array() );
 	if ( $items ) return $items;
 	// Existing documents retain their entered content until the user changes it.
-	return array( array( 'page' => 1, 'text' => co_sales_meta( $id, 'title' ) . "\n" . co_sales_meta( $id, 'body' ), 'amount' => co_sales_document_total( $id ) ) );
+	return array( array( 'text' => co_sales_meta( $id, 'title' ) . "\n" . co_sales_meta( $id, 'body' ), 'amount' => co_sales_document_total( $id ) ) );
 }
 
 function co_sales_baht_text( $amount ) {
@@ -63,7 +63,7 @@ function co_sales_item_editor( $item, $index ) { ?>
 	<article class="sales-item-editor" data-sales-item>
 		<div class="sales-item-head"><strong>รายละเอียดงาน / รายการ</strong><button type="button" class="sales-link danger" data-remove-item>ลบรายการ</button></div>
 		<label>คำอธิบาย / Description<textarea name="item_text[]" rows="8"><?php echo esc_textarea( $item['text'] ); ?></textarea></label>
-		<div class="sales-grid"><label>มูลค่าก่อนภาษี / Pre-Tax Amount<input type="number" min="0" step=".01" name="item_amount[]" value="<?php echo esc_attr( $item['amount'] ); ?>" placeholder="เว้นว่างสำหรับรายละเอียดที่ไม่มีราคา"></label><label>เริ่มในหน้า<input type="number" min="1" max="99" name="item_page[]" value="<?php echo absint( $item['page'] ); ?>"></label></div>
+		<label>มูลค่าก่อนภาษี / Pre-Tax Amount<input type="number" min="0" step=".01" name="item_amount[]" value="<?php echo esc_attr( $item['amount'] ); ?>" placeholder="เว้นว่างสำหรับรายละเอียดที่ไม่มีราคา"></label>
 	</article>
 <?php }
 
@@ -92,27 +92,25 @@ function co_sales_render_paper( $id ) {
 	}
 	$signature = ! empty( $issuer['signature_id'] ) ? wp_get_attachment_image_url( $issuer['signature_id'], 'medium' ) : '';
 	$items = co_sales_items( $id );
-	usort( $items, fn( $a, $b ) => (int) $a['page'] <=> (int) $b['page'] );
-	$terms_page = min( 2, max( array_column( $items, 'page' ) ) );
 	$schedule = co_sales_schedule( $id );
 	?>
 	<div data-sales-print-source hidden>
 		<div data-print-header><?php co_sales_print_header( $id, $type, $client, $issuer ); ?></div>
 		<div data-print-rows>
-		<?php if ( 'quotation' !== $type ) : ?><div class="sales-doc-line strong" data-page="1"><span></span><span><?php echo esc_html( co_sales_meta( $id, 'title' ) ); ?></span><strong><?php echo esc_html( co_sales_money( co_sales_document_total( $id ) ) ); ?></strong></div><?php endif; ?>
+		<?php if ( 'quotation' !== $type ) : ?><div class="sales-doc-line strong"><span></span><span><?php echo esc_html( co_sales_meta( $id, 'title' ) ); ?></span><strong><?php echo esc_html( co_sales_money( co_sales_document_total( $id ) ) ); ?></strong></div><?php endif; ?>
 		<?php $terms_printed = false; foreach ( $items as $item ) :
-			if ( ! $terms_printed && $schedule && (int) $item['page'] >= 3 ) { co_sales_print_terms( $schedule, $terms_page, co_sales_meta( $id, 'wht_rate', 3 ) ); $terms_printed = true; }
 			$lines = explode( "\n", $item['text'] );
 			foreach ( $lines as $index => $line ) :
+				if ( ! $terms_printed && $schedule && preg_match( '/^Retaining\s*&\s*Maintenance/u', trim( $line ) ) ) { co_sales_print_terms( $schedule, co_sales_meta( $id, 'wht_rate', 3 ) ); $terms_printed = true; }
 				$strong = preg_match( '/^(Project |Web strategic|Website Branding|Customize|การดูแล|Multiple |\(ภาษาที่|Retaining|โดยการ|สิ่งที่|สิทธิ|ระยะเวลา|\(ขึ้นอยู่)/u', trim( $line ) );
 				$classes = $strong ? ' strong' : '';
 				if ( preg_match( '/^(Project Concept|Project Execution|Customize Function|การดูแลครอบคลุมถึง|Multiple Languages|Retaining & Maintenance|สิ่งที่ลูกค้า|ระยะเวลา)/u', trim( $line ) ) ) $classes .= ' is-section';
 				if ( str_starts_with( trim( $line ), '-' ) ) $classes .= ' is-bullet';
 				if ( '' === trim( $line ) ) $classes .= ' is-blank'; ?>
-				<div class="sales-doc-line<?php echo esc_attr( $classes ); ?>" data-page="<?php echo absint( $item['page'] ); ?>"><span></span><span><?php echo $line === '' ? '&nbsp;' : esc_html( $line ); ?></span><strong><?php if ( ( str_starts_with( $item['text'], 'Project Concept :' ) ? 1 : 0 ) === $index && 'quotation' === $type && '' !== $item['amount'] ) echo esc_html( co_sales_money( $item['amount'] ) ); ?></strong></div>
+				<div class="sales-doc-line<?php echo esc_attr( $classes ); ?>"><span></span><span><?php echo $line === '' ? '&nbsp;' : esc_html( $line ); ?></span><strong><?php if ( ( str_starts_with( $item['text'], 'Project Concept :' ) ? 1 : 0 ) === $index && 'quotation' === $type && '' !== $item['amount'] ) echo esc_html( co_sales_money( $item['amount'] ) ); ?></strong></div>
 			<?php endforeach;
-		endforeach; if ( ! $terms_printed && $schedule ) co_sales_print_terms( $schedule, $terms_page, co_sales_meta( $id, 'wht_rate', 3 ) ); ?>
-		<?php if ( co_sales_meta( $id, 'notes' ) ) : ?><div class="sales-doc-line" data-page="<?php echo absint( max( array_column( $items, 'page' ) ) ); ?>"><span></span><span><?php echo nl2br( esc_html( co_sales_meta( $id, 'notes' ) ) ); ?></span><span></span></div><?php endif; ?>
+		endforeach; if ( ! $terms_printed && $schedule ) co_sales_print_terms( $schedule, co_sales_meta( $id, 'wht_rate', 3 ) ); ?>
+		<?php if ( co_sales_meta( $id, 'notes' ) ) : ?><div class="sales-doc-line"><span></span><span><?php echo nl2br( esc_html( co_sales_meta( $id, 'notes' ) ) ); ?></span><span></span></div><?php endif; ?>
 		</div>
 		<div data-print-footer><div class="sales-doc-footer"><div class="sales-doc-payment"><?php if ( in_array( $type, array( 'quotation', 'invoice' ), true ) ) : ?><b>การชำระเงิน / Payment</b><div><?php echo nl2br( esc_html( $issuer['bank'] ?? '' ) ); ?></div><?php endif; ?></div><div class="sales-doc-totals"><div><span>ราคาสุทธิสินค้า (บาท) / Pre-WHT Amount</span><b><?php echo esc_html( co_sales_money( co_sales_document_total( $id ) ) ); ?></b></div><div><span>จำนวนหัก ณ ที่จ่าย <?php echo esc_html( co_sales_meta( $id, 'wht_rate', 3 ) ); ?>% (บาท) / WHT</span><b><?php echo esc_html( co_sales_money( co_sales_wht( $id ) ) ); ?></b></div><div><span>จำนวนเงินรวมทั้งสิ้น (บาท) / Grand Total</span><b><?php echo esc_html( co_sales_money( co_sales_grand_total( $id ) ) ); ?></b></div><div class="sales-doc-baht"><?php echo esc_html( co_sales_baht_text( co_sales_grand_total( $id ) ) ); ?></div></div></div><div class="sales-doc-signatures"><div><p>อนุมัติโดย / Approved by</p><div class="signature-space"><?php if ( $signature ) : ?><img src="<?php echo esc_url( $signature ); ?>" alt="ลายเซ็นผู้ออกเอกสาร"><?php endif; ?></div><p>วันที่ / Date <?php echo esc_html( co_sales_date( co_sales_meta( $id, 'issue_date' ) ) ); ?></p></div><div><p>ยอมรับ<?php echo 'receipt' === $type ? 'ใบเสร็จรับเงิน' : ( 'invoice' === $type ? 'ใบแจ้งหนี้' : 'ใบเสนอราคา' ); ?> / Accepted by</p><div class="signature-space dotted"></div><p>วันที่ / Date..........................</p></div></div></div>
 	</div>
@@ -120,8 +118,8 @@ function co_sales_render_paper( $id ) {
 	<?php
 }
 
-function co_sales_print_terms( $schedule, $page = 2, $rate = 3 ) { ?>
-	<div class="sales-doc-line strong is-section" data-page="<?php echo absint( $page ); ?>"><span></span><span>Terms of Payment :</span><span></span></div>
-	<?php foreach ( $schedule as $row ) : ?><div class="sales-doc-line" data-page="<?php echo absint( $page ); ?>"><span></span><span><b><?php echo esc_html( (float) $row['percent'] ); ?>%</b> <?php echo esc_html( $row['description'] ); ?></span><span></span></div><?php endforeach; ?>
-	<div class="sales-doc-line" data-page="<?php echo absint( $page ); ?>"><span></span><span>จำนวนหัก ณ ที่จ่าย <?php echo esc_html( $rate ); ?>% (บาท) / WHT</span><span></span></div>
+function co_sales_print_terms( $schedule, $rate = 3 ) { ?>
+	<div class="sales-doc-line strong is-section"><span></span><span>Terms of Payment :</span><span></span></div>
+	<?php foreach ( $schedule as $row ) : ?><div class="sales-doc-line"><span></span><span><b><?php echo esc_html( (float) $row['percent'] ); ?>%</b> <?php echo esc_html( $row['description'] ); ?></span><span></span></div><?php endforeach; ?>
+	<div class="sales-doc-line"><span></span><span>จำนวนหัก ณ ที่จ่าย <?php echo esc_html( $rate ); ?>% (บาท) / WHT</span><span></span></div>
 <?php }
