@@ -46,37 +46,58 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   const money = n => Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const rounded = n => Math.round((n + Number.EPSILON) * 100) / 100;
+  const schedule = form?.querySelector('[data-sales-schedule]');
   function calculate() {
     if (!form) return;
-    const sum = [...form.querySelectorAll('[name="item_amount[]"]')].reduce((n, el) => n + Math.max(0, Number(el.value)), 0);
+    const sum = [...form.querySelectorAll('[name="item_amount[]"]')].reduce((n, el) => n + Math.round(Math.max(0, Number(el.value) || 0) * 100), 0) / 100;
+    const quotation = form.dataset.documentType === 'quotation';
+    const percent = quotation ? 100 : Math.min(100, Math.max(0, Number(schedule?.querySelector('[name="schedule_percent[]"]').value) || 0));
     const subtotal = form.querySelector('[name="subtotal"]');
-    if (form.dataset.documentType === 'quotation') subtotal.value = sum.toFixed(2);
-    const value = Math.max(0, Number(subtotal.value));
-    const wht = Math.min(100, Math.max(0, Number(form.querySelector('[name="wht_rate"]').value))) * value / 100;
+    const value = rounded(sum * percent / 100);
+    subtotal.value = value.toFixed(2);
+    form.querySelector('[data-sales-base-total]').value = money(sum);
+    form.querySelector('[data-billing-base-panel]').hidden = quotation;
+    form.querySelector('[data-billing-formula]').textContent = '฿' + money(sum) + ' × ' + percent + '% = ฿' + money(value) + ' (ก่อนหัก ณ ที่จ่าย)';
+    form.querySelector('[data-subtotal-label]').textContent = quotation ? 'ราคาสุทธิรวมทุกรายการ (คำนวณอัตโนมัติ)' : 'มูลค่างวดนี้ (คำนวณอัตโนมัติ)';
+    const wht = rounded(Math.min(100, Math.max(0, Number(form.querySelector('[name="wht_rate"]').value) || 0)) * value / 100);
     form.querySelector('[data-sales-wht]').textContent = money(wht);
-    form.querySelector('[data-sales-total]').textContent = money(value - wht);
+    form.querySelector('[data-sales-total]').textContent = money(rounded(value - wht));
+    updateSchedule(sum);
+    // Keep an automatically generated installment title in sync, preserving custom titles.
+    const title = form.querySelector('[name="document_title"]');
+    if (!quotation && /^งวดที่ \d+\s*:/.test(title.value)) {
+      title.value = 'งวดที่ ' + Math.max(1, Number(form.querySelector('[name="installment_no"]').value) || 1) + ' : ' + percent + '% ' + schedule.querySelector('textarea').value.trim();
+    }
   }
   form?.addEventListener('input', calculate);
   form?.querySelector('[data-type-select]')?.addEventListener('change', event => {
     form.dataset.documentType = event.target.value;
-    form.querySelector('[name="subtotal"]').readOnly = event.target.value === 'quotation';
     calculate();
   });
   calculate();
 
-  const schedule = form?.querySelector('[data-sales-schedule]');
-  function updateSchedule() {
+  function updateSchedule(base) {
     if (!schedule) return;
+    const quotation = form.dataset.documentType === 'quotation';
+    schedule.querySelector('[data-schedule-heading]').textContent = quotation ? 'แผนงวดชำระเงิน / Terms of Payment' : 'งวดที่เรียกเก็บในใบนี้';
+    schedule.querySelector('[data-add-schedule]').hidden = !quotation;
     const preview = schedule.querySelector('[data-schedule-preview]');
     preview.replaceChildren();
     const heading = document.createElement('p'); heading.textContent = 'Terms of Payment :';
     preview.append(heading);
     let total = 0;
     schedule.querySelectorAll('[data-schedule-row]').forEach((row, index) => {
-      row.querySelector('[data-schedule-label]').textContent = 'งวดที่ ' + (index + 1);
+      const active = quotation || index === 0;
+      row.hidden = !active;
+      row.querySelectorAll('input,textarea').forEach(input => input.disabled = !active);
+      row.querySelector('[data-remove-schedule]').hidden = !quotation;
+      if (!active) return;
+      row.querySelector('[data-schedule-label]').textContent = 'งวดที่ ' + (quotation ? index + 1 : Math.max(1, Number(form.querySelector('[name="installment_no"]').value) || 1));
       const input = row.querySelector('[name="schedule_percent[]"]');
       const percent = Number(input.value || 0);
       total += percent;
+      row.querySelector('[data-schedule-amount]').textContent = '฿' + money(rounded(base * Math.min(100, Math.max(0, percent)) / 100));
       const descriptionInput = row.querySelector('textarea');
       descriptionInput.required = percent > 0;
       const description = descriptionInput.value.trim();
@@ -85,27 +106,27 @@ document.addEventListener('DOMContentLoaded', () => {
       line.append(value, document.createTextNode(description || '— กรุณาระบุเงื่อนไขการชำระ'));
       preview.append(line);
     });
-    const valid = Math.abs(total - 100) < 0.001;
+    const valid = quotation ? Math.abs(total - 100) < 0.001 : total > 0 && total <= 100;
     const totalLabel = schedule.querySelector('[data-schedule-total]');
-    totalLabel.textContent = 'รวม ' + Number(total.toFixed(2)) + '% ' + (valid ? '— ครบ 100%' : '— เปอร์เซ็นต์ทุกงวดควรรวมเป็น 100%');
+    totalLabel.textContent = quotation
+      ? 'รวม ' + Number(total.toFixed(2)) + '% ' + (valid ? '— ครบ 100%' : '— เปอร์เซ็นต์ทุกงวดควรรวมเป็น 100%')
+      : 'เรียกเก็บงวดนี้ ' + Number(total.toFixed(2)) + '% ' + (valid ? 'ของมูลค่ารวมรายการ' : '— ระบุเปอร์เซ็นต์มากกว่า 0 และไม่เกิน 100');
     totalLabel.classList.toggle('is-invalid', !valid);
   }
-  schedule?.addEventListener('input', updateSchedule);
   schedule?.addEventListener('click', event => {
     const list = schedule.querySelector('[data-schedule-rows]');
     if (event.target.closest('[data-add-schedule]')) {
       const row = list.firstElementChild.cloneNode(true);
       row.querySelectorAll('input,textarea').forEach(el => el.value = '');
-      list.append(row); updateSchedule(); row.querySelector('input').focus();
+      list.append(row); calculate(); row.querySelector('input').focus();
     }
     const remove = event.target.closest('[data-remove-schedule]');
     if (remove) {
       if (list.children.length > 1) remove.closest('[data-schedule-row]').remove();
       else list.querySelectorAll('input,textarea').forEach(el => el.value = '');
-      updateSchedule();
+      calculate();
     }
   });
-  updateSchedule();
   document.addEventListener('click', event => {
     if (event.target.closest('[data-use-original-template]') && confirm('แทนรายละเอียดงานปัจจุบันด้วยแม่แบบต้นฉบับครบทุกส่วน?')) {
       form.querySelector('[data-sales-items]').replaceChildren(form.querySelector('[data-sales-default-items]').content.cloneNode(true));

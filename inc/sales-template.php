@@ -36,6 +36,9 @@ function co_sales_default_schedule_text() {
 function co_sales_items( $id ) {
 	$items = co_sales_meta( $id, 'items', array() );
 	if ( $items ) return $items;
+	$source_id = absint( co_sales_meta( $id, 'source_document_id' ) );
+	$expected = array( 'invoice' => 'quotation', 'receipt' => 'invoice' )[co_sales_meta( $id, 'document_type' )] ?? '';
+	if ( $source_id && $expected && $expected === co_sales_meta( $source_id, 'document_type' ) ) return co_sales_items( $source_id );
 	// Existing documents retain their entered content until the user changes it.
 	return array( array( 'text' => co_sales_meta( $id, 'title' ) . "\n" . co_sales_meta( $id, 'body' ), 'amount' => co_sales_document_total( $id ) ) );
 }
@@ -138,7 +141,7 @@ function co_sales_render_paper( $id ) {
 	}
 	$signature = ! empty( $issuer['signature_id'] ) ? wp_get_attachment_image_url( $issuer['signature_id'], 'medium' ) : '';
 	$items = co_sales_items( $id );
-	$schedule = co_sales_schedule( $id );
+	$schedule = co_sales_billing_schedule( $id );
 	?>
 	<div data-sales-print-source hidden>
 		<div data-print-header><?php co_sales_print_header( $id, $type, $client, $issuer ); ?></div>

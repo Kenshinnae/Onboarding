@@ -2,6 +2,7 @@
 defined( 'ABSPATH' ) || exit;
 require_once __DIR__ . '/sales-template.php';
 require_once __DIR__ . '/sales-pages.php';
+require_once __DIR__ . '/sales-billing.php';
 
 function co_sales_register_types() {
 	register_post_type( 'sales_client', array( 'labels' => array( 'name' => 'Sales Clients', 'singular_name' => 'Sales Client' ), 'public' => false, 'show_ui' => false, 'supports' => array( 'title' ) ) );
@@ -89,7 +90,7 @@ function co_sales_find_derived_document( $source_id, $type, $installment ) {
 function co_sales_assets() { ?>
 	<style><?php include CO_THEME_DIR . '/assets/sales-documents.css'; include CO_THEME_DIR . '/assets/sales-print.css'; ?></style>
 <script src="<?php echo esc_url( get_template_directory_uri() . '/assets/sales-documents.js?v=' . filemtime( CO_THEME_DIR . '/assets/sales-documents.js' ) ); ?>" defer></script>
-	<script>document.addEventListener('DOMContentLoaded',()=>{const q=(s,p=document)=>p.querySelector(s);document.querySelectorAll('[data-sales-confirm]').forEach(a=>a.addEventListener('click',e=>{if(!confirm(a.dataset.salesConfirm))e.preventDefault()}));const client=q('#sales-client'),project=q('#sales-project');project?.addEventListener('change',()=>{const o=project.selectedOptions[0];if(o?.dataset.client&&client&&!client.value)client.value=o.dataset.client});const subtotal=q('[name="subtotal"]'),rate=q('[name="wht_rate"]'),wht=q('[data-sales-wht]'),total=q('[data-sales-total]');const calc=()=>{const s=Math.max(0,Number(subtotal?.value||0)),r=Math.max(0,Number(rate?.value||0));if(wht)wht.textContent=(s*r/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});if(total)total.textContent=(s-s*r/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})};subtotal?.addEventListener('input',calc);rate?.addEventListener('input',calc);calc();q('[data-add-issuer]')?.addEventListener('click',()=>{const list=q('.sales-issuer-list'),row=list.querySelector('.sales-issuer-row').cloneNode(true);row.querySelectorAll('input,textarea').forEach(i=>{i.value='';if(i.name==='issuer_id[]')i.value='issuer_'+Date.now()});row.querySelector('[data-signature-preview]')?.replaceChildren();list.appendChild(row)});document.addEventListener('click',e=>{const remove=e.target.closest('[data-remove-issuer]');if(remove&&document.querySelectorAll('.sales-issuer-row').length>1)remove.closest('.sales-issuer-row').remove();const pick=e.target.closest('[data-pick-signature]');if(pick&&window.wp?.media){e.preventDefault();const row=pick.closest('.sales-issuer-row'),frame=wp.media({title:'Choose signature',button:{text:'Use signature'},multiple:false});frame.on('select',()=>{const item=frame.state().get('selection').first().toJSON();row.querySelector('[name="issuer_signature_id[]"]').value=item.id;row.querySelector('[data-signature-preview]').innerHTML='<img src="'+(item.sizes?.medium?.url||item.url)+'" alt="Signature">'});frame.open()}})});</script>
+	<script>document.addEventListener('DOMContentLoaded',()=>{const q=(s,p=document)=>p.querySelector(s);document.querySelectorAll('[data-sales-confirm]').forEach(a=>a.addEventListener('click',e=>{if(!confirm(a.dataset.salesConfirm))e.preventDefault()}));const client=q('#sales-client'),project=q('#sales-project');project?.addEventListener('change',()=>{const o=project.selectedOptions[0];if(o?.dataset.client&&client&&!client.value)client.value=o.dataset.client});q('[data-add-issuer]')?.addEventListener('click',()=>{const list=q('.sales-issuer-list'),row=list.querySelector('.sales-issuer-row').cloneNode(true);row.querySelectorAll('input,textarea').forEach(i=>{i.value='';if(i.name==='issuer_id[]')i.value='issuer_'+Date.now()});row.querySelector('[data-signature-preview]')?.replaceChildren();list.appendChild(row)});document.addEventListener('click',e=>{const remove=e.target.closest('[data-remove-issuer]');if(remove&&document.querySelectorAll('.sales-issuer-row').length>1)remove.closest('.sales-issuer-row').remove();const pick=e.target.closest('[data-pick-signature]');if(pick&&window.wp?.media){e.preventDefault();const row=pick.closest('.sales-issuer-row'),frame=wp.media({title:'Choose signature',button:{text:'Use signature'},multiple:false});frame.on('select',()=>{const item=frame.state().get('selection').first().toJSON();row.querySelector('[name="issuer_signature_id[]"]').value=item.id;row.querySelector('[data-signature-preview]').innerHTML='<img src="'+(item.sizes?.medium?.url||item.url)+'" alt="Signature">'});frame.open()}})});</script>
 <?php }
 
 add_action( 'admin_post_co_sales_save_client', function () {
@@ -109,6 +110,7 @@ add_action( 'admin_post_co_sales_save_document', function () {
 	if ( ! current_user_can( 'edit_posts' ) ) wp_die( 'Permission denied.' ); check_admin_referer( 'co_sales_document' ); $id = absint( $_POST['document_id'] ?? 0 ); $type = sanitize_key( $_POST['document_type'] ?? 'quotation' ); if ( ! isset( co_sales_types()[$type] ) ) $type = 'quotation'; $client_id = absint( $_POST['client_id'] ?? 0 ); if ( 'sales_client' !== get_post_type( $client_id ) ) wp_die( 'Select a valid client.' ); $date = sanitize_text_field( $_POST['issue_date'] ?? wp_date( 'Y-m-d' ) ); $installment = absint( $_POST['installment_no'] ?? 0 );
 	if ( $id && 'sales_document' !== get_post_type( $id ) ) wp_die( 'Invalid document.' );
 	if ( $id ) $type = co_sales_meta( $id, 'document_type' );
+	if ( 'quotation' !== $type ) $installment = max( 1, $installment );
 	$parsed_date = DateTimeImmutable::createFromFormat( '!Y-m-d', $date );
 	if ( ! $parsed_date || $parsed_date->format( 'Y-m-d' ) !== $date ) wp_die( 'วันที่เอกสารไม่ถูกต้อง' );
 	$schedule = array();
@@ -125,6 +127,9 @@ add_action( 'admin_post_co_sales_save_document', function () {
 		$schedule = co_sales_parse_schedule( wp_unslash( $_POST['payment_schedule'] ?? '' ) );
 	}
 	if ( 'quotation' === $type && $schedule && abs( array_sum( array_column( $schedule, 'percent' ) ) - 100 ) > 0.001 ) wp_die( 'เปอร์เซ็นต์งวดชำระต้องรวมเป็น 100%' );
+	if ( 'quotation' !== $type && count( $schedule ) > 1 ) $schedule = array( $schedule[max( 0, $installment - 1 )] ?? $schedule[0] );
+	if ( 'quotation' !== $type && ! $schedule ) wp_die( 'กรุณาระบุเปอร์เซ็นต์และเงื่อนไขของงวดนี้' );
+	$_POST['payment_schedule'] = wp_slash( implode( "\n", array_map( fn( $row ) => $row['percent'] . '|' . $row['description'], $schedule ) ) );
 	if ( $id && 'sales_document' === get_post_type( $id ) ) { $number = co_sales_meta( $id, 'number' ); wp_update_post( array( 'ID' => $id, 'post_title' => $number ) ); } else { $number = co_sales_next_number( $type, $client_id, $date, $installment ); $id = wp_insert_post( array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'post_title' => $number ), true ); }
 	if ( is_wp_error( $id ) || ! $id ) wp_die( 'ไม่สามารถบันทึกเอกสารได้' );
 	$issuer = co_sales_issuer( sanitize_key( $_POST['issuer_id'] ?? '' ) ); $client = get_post( $client_id );
@@ -136,7 +141,13 @@ add_action( 'admin_post_co_sales_save_document', function () {
 	}
 	if ( $items ) update_post_meta( $id, '_sales_items', $items );
 	update_post_meta( $id, '_sales_body', implode( "\n\n", array_map( fn( $item ) => implode( "\n", array_column( co_sales_description_lines( $item ), 'text' ) ), $items ) ) );
-	if ( 'quotation' === $type && $items ) $_POST['subtotal'] = array_sum( array_column( $items, 'amount' ) );
+	$base_total = co_sales_items_value( $items );
+	$percent = 'quotation' === $type ? 100 : (float) $schedule[0]['percent'];
+	$_POST['subtotal'] = co_sales_installment_value( $base_total, $percent );
+	update_post_meta( $id, '_sales_base_total', $base_total );
+	update_post_meta( $id, '_sales_installment_percent', $percent );
+	$title = sanitize_text_field( wp_unslash( $_POST['document_title'] ?? '' ) );
+	if ( 'quotation' !== $type && ( '' === $title || preg_match( '/^งวดที่ \d+\s*:/u', $title ) ) ) $_POST['document_title'] = wp_slash( 'งวดที่ ' . $installment . ' : ' . $percent . '% ' . $schedule[0]['description'] );
 	$old_snapshot = co_sales_meta( $id, 'client_snapshot' );
 	if ( $old_snapshot && (int) co_sales_meta( $id, 'client_id' ) === $client_id ) $preserve_client = $old_snapshot;
 	$old_issuer = co_sales_meta( $id, 'issuer_snapshot' );
@@ -156,8 +167,9 @@ add_action( 'admin_post_co_sales_derive_document', function () {
 	$source_type = co_sales_meta( $source_id, 'document_type' );
 	if ( ! in_array( $source_type, array( 'quotation', 'invoice' ), true ) ) wp_die( 'Invalid source document type.' );
 	$type = 'quotation' === $source_type ? 'invoice' : 'receipt';
-	$installment = absint( $_GET['installment'] ?? co_sales_meta( $source_id, 'installment_no', 1 ) );
-	$existing_id = co_sales_find_derived_document( $source_id, $type, $installment );
+	$installment = max( 1, absint( $_GET['installment'] ?? co_sales_meta( $source_id, 'installment_no', 1 ) ) );
+	if ( 'invoice' === $type && ! isset( co_sales_schedule( $source_id )[$installment - 1] ) ) wp_die( 'ไม่พบงวดชำระนี้ใน Quotation กรุณาบันทึกแผนงวดก่อน' );
+	$existing_id = 'receipt' === $type ? co_sales_invoice_receipt( $source_id ) : co_sales_find_derived_document( $source_id, $type, $installment );
 	if ( $existing_id ) {
 		wp_safe_redirect( admin_url( 'admin.php?page=co-sales-edit&document=' . $existing_id . '&existing=1' ) );
 		exit;
@@ -167,16 +179,24 @@ add_action( 'admin_post_co_sales_derive_document', function () {
 	$number = co_sales_next_number( $type, $client_id, $date, $installment );
 	$id = wp_insert_post( array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'post_title' => $number ) );
 	foreach ( array( 'project_id','client_id','client_snapshot','issuer_id','issuer_snapshot','body','wht_rate','notes','items','payment_schedule','payment_schedule_text' ) as $key ) update_post_meta( $id, '_sales_' . $key, co_sales_meta( $source_id, $key ) );
+	update_post_meta( $id, '_sales_items', co_sales_items( $source_id ) );
 	$subtotal = co_sales_document_total( $source_id );
 	if ( 'invoice' === $type ) {
 		$schedule = co_sales_schedule( $source_id );
 		$row = $schedule[max( 0, $installment - 1 )] ?? array( 'percent' => 100, 'description' => '' );
-		$subtotal = round( $subtotal * (float) $row['percent'] / 100, 2 );
+		$base_total = $subtotal;
+		$subtotal = co_sales_installment_value( $base_total, $row['percent'] );
 		update_post_meta( $id, '_sales_title', 'งวดที่ ' . $installment . ' : ' . $row['percent'] . '% ' . $row['description'] );
 	} else {
+		$row = co_sales_billing_schedule( $source_id )[0];
+		$base_total = co_sales_meta( $source_id, 'base_total', co_sales_items_value( co_sales_items( $source_id ) ) );
 		update_post_meta( $id, '_sales_title', co_sales_meta( $source_id, 'title' ) );
 		update_post_meta( $source_id, '_sales_status', 'paid' );
 	}
+	update_post_meta( $id, '_sales_base_total', $base_total );
+	update_post_meta( $id, '_sales_installment_percent', (float) $row['percent'] );
+	update_post_meta( $id, '_sales_payment_schedule', array( $row ) );
+	update_post_meta( $id, '_sales_payment_schedule_text', $row['percent'] . '|' . $row['description'] );
 	update_post_meta( $id, '_sales_number', $number ); update_post_meta( $id, '_sales_document_type', $type ); update_post_meta( $id, '_sales_source_document_id', $source_id ); update_post_meta( $id, '_sales_installment_no', $installment ); update_post_meta( $id, '_sales_issue_date', $date ); update_post_meta( $id, '_sales_status', 'receipt' === $type ? 'paid' : 'draft' ); update_post_meta( $id, '_sales_subtotal', $subtotal );
 	co_sales_sync_payment( $id );
 	wp_safe_redirect( admin_url( 'admin.php?page=co-sales-edit&document=' . $id ) ); exit;
