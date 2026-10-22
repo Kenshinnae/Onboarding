@@ -97,7 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (page > requested) { if (body.children.length && output.children.length < page) nextPage(); requested = page; }
       const row = original.cloneNode(true); body.append(row);
       if ((sheet.scrollHeight > sheet.clientHeight + 1 || body.scrollHeight > body.clientHeight + 1) && body.children.length > 1) {
-        row.remove(); nextPage(); body.append(row);
+        row.remove();
+        // Keep a section heading with its first detail line on continuation pages.
+        const carry = [];
+        while (body.lastElementChild?.matches('.is-section,.is-blank')) {
+          const previous = body.lastElementChild;
+          carry.unshift(previous); previous.remove();
+        }
+        nextPage(); body.append(...carry, row);
       }
     }
     const footer = source.querySelector('[data-print-footer]').firstElementChild.cloneNode(true);
