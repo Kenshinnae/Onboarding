@@ -88,6 +88,7 @@ function co_project_record_payment( $invoice, $date, $existing = 0, $note = '', 
 	if ( $project && ( 'client_project' !== get_post_type( $project ) || 'publish' !== get_post_status( $project ) ) ) throw new RuntimeException( 'Project ของ Invoice ไม่ถูกต้อง' );
 	$write = function () use ( $invoice, $date, $existing, $note, $project, $confirm_new ) {
 		return co_project_locked( 'invoice_payment_' . $invoice, function () use ( $invoice, $date, $existing, $note, $project, $confirm_new ) {
+			if ( 'publish' !== get_post_status( $invoice ) ) throw new RuntimeException( 'Invoice ถูกลบแล้ว กรุณาโหลดหน้าใหม่' );
 			$payment = co_sales_invoice_payment( $invoice );
 			if ( $payment ) return $payment;
 			$amount = co_sales_grand_total( $invoice );

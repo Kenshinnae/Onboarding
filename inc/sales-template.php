@@ -2,7 +2,7 @@
 defined( 'ABSPATH' ) || exit;
 
 function co_sales_sync_payment( $id ) {
-	if ( 'receipt' !== co_sales_meta( $id, 'document_type' ) ) return;
+	if ( 'receipt' !== co_sales_meta( $id, 'document_type' ) || 'publish' !== get_post_status( $id ) ) return;
 	$project_id = absint( co_sales_meta( $id, 'project_id' ) );
 	$payment_id = absint( co_sales_meta( $id, 'payment_id' ) );
 	$invoice = absint( co_sales_meta( $id, 'source_document_id' ) );

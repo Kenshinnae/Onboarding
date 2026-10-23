@@ -20,7 +20,7 @@ function esc_url( $s ) { return esc_attr( $s ); }
 function esc_url_raw( $s ) { return $s; }
 function wp_date( $f, $t = null ) { return date( $f, $t ?? strtotime( '2026-10-22 12:00:00' ) ); }
 function current_time( $f ) { return 'timestamp' === $f ? strtotime( '2026-10-22 12:00:00' ) : wp_date( $f ); }
-function current_user_can( ...$a ) { return $GLOBALS['allowed']; }
+function current_user_can( ...$a ) { return $GLOBALS['allowed'] && ! in_array( $a[1] ?? 0, $GLOBALS['denied_posts'] ?? array(), true ); }
 function get_current_user_id() { return 1; }
 function sanitize_file_name( $name ) { return preg_replace( '/[^\pL\pN_.-]+/u', '-', basename( str_replace( '\\', '/', $name ) ) ); }
 function check_admin_referer( ...$a ) { if ( ! $GLOBALS['nonce_valid'] ) throw new RuntimeException( 'Invalid nonce' ); }
@@ -35,10 +35,11 @@ function post_type_exists( $type ) { return in_array( $type, array( 'client_proj
 function get_post_status( $id ) { return get_post( $id )->post_status ?? false; }
 function get_the_title( $id ) { return get_post( $id )->post_title ?? ''; }
 function get_post_meta( $id, $key, $single = true ) { if ( ! $id ) return false; return $GLOBALS['meta'][$id][$key] ?? ''; }
+function metadata_exists( $type, $id, $key ) { return array_key_exists( $key, $GLOBALS['meta'][$id] ?? array() ); }
 function update_post_meta( $id, $key, $value ) { $GLOBALS['meta'][$id][$key] = $value; }
 function delete_post_meta( $id, $key ) { unset( $GLOBALS['meta'][$id][$key] ); }
 function wp_insert_post( $data, ...$args ) { $id = $data['ID'] ?? count( $GLOBALS['posts'] ) + 1; $GLOBALS['posts'][$id] = (object) array_merge( array( 'post_date' => '2026-10-01', 'post_title' => '' ), (array) get_post( $id ), $data, array( 'ID' => $id ) ); return $id; }
-function wp_update_post( $data ) { return wp_insert_post( $data ); }
+function wp_update_post( $data ) { if ( ( $GLOBALS['fail_update_id'] ?? 0 ) === $data['ID'] ) { $GLOBALS['fail_update_id'] = 0; return 0; } return wp_insert_post( $data ); }
 function wp_trash_post( $id ) { $GLOBALS['posts'][$id]->post_status = 'trash'; return $GLOBALS['posts'][$id]; }
 function get_posts( $args ) {
 	$result = array_values( array_filter( $GLOBALS['posts'], function ( $p ) use ( $args ) {
