@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const rounded = n => Math.round((n + Number.EPSILON) * 100) / 100;
   const schedule = form?.querySelector('[data-sales-schedule]');
   const financialLocked = form?.dataset.financialLocked === '1';
+  const issuer = form?.querySelector('[name="issuer_id"]');
+  if (issuer && (financialLocked || issuer.dataset.issuerLocked === '1')) { const hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.name = issuer.name; hidden.value = issuer.value; issuer.after(hidden); issuer.disabled = true; }
   if (financialLocked) {
     form.querySelectorAll('[name="item_amount[]"],[name="discount"],[name="wht_rate"],[name="installment_no"],[name="schedule_percent[]"],[name="schedule_description[]"]').forEach(input => input.readOnly = true);
     form.querySelectorAll('[name="project_id"],[name="client_id"]').forEach(select => {
@@ -80,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const preview = document.createElement('div');
       preview.innerHTML = item.querySelector('[data-description-editor]').innerHTML.replace(/<br\s*\/?>|<\/?(?:div|p|li)(?:\s[^>]*)?>/gi, '\n');
       item.querySelector('[data-item-number]').textContent = 'รายการที่ ' + (index + 1);
+      item.querySelector('[data-remove-item]').setAttribute('aria-label', 'ลบรายการที่ ' + (index + 1));
       item.querySelector('[data-item-preview]').textContent = preview.textContent.split('\n').map(line => line.trim()).find(Boolean) || 'รายการใหม่ — กดเพื่อเพิ่มรายละเอียด';
       const amount = item.querySelector('[name="item_amount[]"]').value;
       item.querySelector('[data-item-amount]').textContent = amount === '' ? 'ยังไม่ระบุมูลค่า' : '฿' + money(Math.max(0, Number(amount) || 0));
@@ -188,7 +191,23 @@ document.addEventListener('DOMContentLoaded', () => {
       row.querySelector('[data-description-editor]').focus();
     }
     const remove = event.target.closest('[data-remove-item]');
-    if (remove && form.querySelectorAll('[data-sales-item]').length > 1) { remove.closest('[data-sales-item]').remove(); calculate(); }
+    if (remove && form?.contains(remove)) {
+      event.preventDefault(); // Deleting a collapsed item must not toggle its details.
+      if (financialLocked) return;
+      const item = remove.closest('[data-sales-item]');
+      const list = item.parentElement;
+      if (list.children.length > 1) {
+        const next = item.nextElementSibling || item.previousElementSibling;
+        item.remove(); calculate(); next.querySelector('summary').focus();
+      } else {
+        // Keep one blank editable row, not the original default content.
+        item.querySelector('[data-description-editor]').innerHTML = '';
+        item.querySelector('[data-description-initial]').innerHTML = '';
+        item.querySelectorAll('input,textarea').forEach(el => el.value = '');
+        item.querySelector('[name="item_format[]"]').value = 'rich';
+        item.open = true; calculate(); item.querySelector('[data-description-editor]').focus();
+      }
+    }
   });
 
   // Build actual A4 sheets, repeating the document header on every page.

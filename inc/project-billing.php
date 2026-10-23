@@ -164,6 +164,7 @@ function co_project_derive_document( $source, $installment = 1 ) {
 	if ( 'receipt' === $type ) $installment = absint( co_sales_meta( $source, 'installment_no', 1 ) );
 	$installment = max( 1, absint( $installment ) );
 	$derive = fn() => co_project_locked( 'document_' . $source, fn() => co_project_locked( 'derive_' . $source . '_' . $type . '_' . ( 'receipt' === $type ? 0 : $installment ), function () use ( $source, $type, $installment ) {
+		if ( 'publish' !== get_post_status( $source ) ) throw new RuntimeException( 'เอกสารต้นทางถูกลบแล้ว กรุณาโหลดหน้าใหม่' );
 		$existing = 'receipt' === $type ? co_sales_invoice_receipt( $source ) : co_sales_find_derived_document( $source, $type, $installment );
 		if ( $existing ) return $existing;
 		$subtotal = co_sales_document_total( $source ); $payment = 0;
@@ -276,5 +277,10 @@ function co_project_render_tasks() {
 	}
 	$today = wp_date( 'Y-m-d' ); $until = wp_date( 'Y-m-d', strtotime( '+7 days', current_time( 'timestamp' ) ) );
 	$expiring = array_filter( co_ma_clients(), fn( $client ) => co_ma_meta( $client->ID, 'expiry_date' ) >= $today && co_ma_meta( $client->ID, 'expiry_date' ) <= $until ); ?>
-	<section class="sales-task-hub"><h2>งานที่ต้องติดตาม</h2><div class="sales-task-grid"><?php foreach ( array( 'Invoice รอรับเงิน' => $waiting, 'รับแล้ว ยังไม่มี Receipt' => $receipts, 'MA หมดภายใน 7 วัน' => $expiring ) as $label => $items ) : ?><article><h3><?php echo esc_html( $label ); ?> <span><?php echo count( $items ); ?></span></h3><div><?php foreach ( $items as $item ) : ?><p><?php if ( 'ma_client' === $item->post_type ) : ?><a href="<?php echo esc_url( admin_url( 'admin.php?page=ma-client-detail&client=' . $item->ID ) ); ?>"><?php echo esc_html( $item->post_title . ' · ' . co_sales_date( co_ma_meta( $item->ID, 'expiry_date' ) ) ); ?></a><?php else : ?><?php echo co_sales_document_link( $item->ID ); ?> <small>฿<?php echo esc_html( co_sales_money( co_sales_grand_total( $item->ID ) ) ); ?></small><?php endif; ?></p><?php endforeach; if ( ! $items ) : ?><p>ไม่มีรายการค้าง</p><?php endif; ?></div></article><?php endforeach; ?></div></section>
+	<section class="sales-task-hub"><h2>งานที่ต้องติดตาม</h2><div class="sales-task-grid">
+	<?php foreach ( array( 'Invoice รอรับเงิน' => $waiting, 'รับแล้ว ยังไม่มี Receipt' => $receipts, 'MA หมดภายใน 7 วัน' => $expiring ) as $label => $items ) : ?>
+		<details class="sales-task-group<?php echo $items ? ' has-items' : ''; ?>"><summary><span><?php echo esc_html( $label ); ?></span><b><?php echo count( $items ); ?></b></summary><div>
+		<?php foreach ( $items as $item ) : ?><p><?php if ( 'ma_client' === $item->post_type ) : ?><a href="<?php echo esc_url( admin_url( 'admin.php?page=ma-client-detail&client=' . $item->ID ) ); ?>"><?php echo esc_html( $item->post_title . ' · ' . co_sales_date( co_ma_meta( $item->ID, 'expiry_date' ) ) ); ?></a><?php else : ?><?php echo co_sales_document_link( $item->ID ); ?> <small>฿<?php echo esc_html( co_sales_money( co_sales_grand_total( $item->ID ) ) ); ?></small><?php endif; ?></p><?php endforeach; if ( ! $items ) : ?><p>ไม่มีรายการค้าง</p><?php endif; ?>
+		</div></details>
+	<?php endforeach; ?></div></section>
 <?php }

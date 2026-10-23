@@ -58,7 +58,7 @@ $launch_display = $target_launch ? wp_date( 'j F Y', strtotime( $target_launch )
 
 get_header();
 ?>
-<style><?php include CO_THEME_DIR . '/assets/brief-report.css'; ?></style>
+<style><?php include CO_THEME_DIR . '/assets/brief-report.css'; include CO_THEME_DIR . '/assets/workspace-ui.css'; ?></style>
 <main class="project-brief">
 	<header class="brief-toolbar no-print">
 		<div class="brief-brand"><span class="brief-brand__mark">CO</span><span>Website Project Onboarding</span></div>

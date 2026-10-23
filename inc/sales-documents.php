@@ -5,6 +5,8 @@ require_once __DIR__ . '/sales-pages.php';
 require_once __DIR__ . '/sales-billing.php';
 require_once __DIR__ . '/project-billing.php';
 require_once __DIR__ . '/project-maintenance.php';
+require_once __DIR__ . '/sales-wht.php';
+require_once __DIR__ . '/sales-lifecycle.php';
 
 function co_sales_register_types() {
 	register_post_type( 'sales_client', array( 'labels' => array( 'name' => 'Sales Clients', 'singular_name' => 'Sales Client' ), 'public' => false, 'show_ui' => false, 'supports' => array( 'title' ) ) );
@@ -15,6 +17,7 @@ add_action( 'init', 'co_sales_register_types' );
 add_action( 'admin_menu', function () {
 	add_menu_page( 'Sales Documents', 'Sales Documents', 'edit_posts', 'co-sales-documents', 'co_sales_documents_page', 'dashicons-media-spreadsheet', 23 );
 	add_submenu_page( 'co-sales-documents', 'Documents', 'Documents', 'edit_posts', 'co-sales-documents', 'co_sales_documents_page' );
+	add_submenu_page( 'co-sales-documents', 'Withholding Certificates', 'ใบหัก ณ ที่จ่าย', 'edit_posts', 'co-sales-wht', 'co_sales_wht_page' );
 	add_submenu_page( 'co-sales-documents', 'Clients', 'Clients', 'edit_posts', 'co-sales-clients', 'co_sales_clients_page' );
 	add_submenu_page( 'co-sales-documents', 'Issuer Settings', 'Issuer Settings', 'manage_options', 'co-sales-settings', 'co_sales_settings_page' );
 	add_submenu_page( null, 'Edit Sales Document', 'Edit Sales Document', 'edit_posts', 'co-sales-edit', 'co_sales_edit_page' );
@@ -43,7 +46,7 @@ function co_sales_client_short( $client_id ) {
 function co_sales_next_number( $type, $client_id, $date, $installment = 0 ) {
 	$prefix = 'quotation' === $type ? 'QO' : ( 'invoice' === $type ? 'IV' . max( 1, absint( $installment ) ) : 'RC' . max( 1, absint( $installment ) ) );
 	$base = $prefix . '_' . co_sales_client_short( $client_id ) . wp_date( 'Ymd', strtotime( $date ?: 'now' ) ); $number = $base; $index = 2;
-	while ( get_posts( array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'numberposts' => 1, 'meta_key' => '_sales_number', 'meta_value' => $number ) ) ) $number = $base . '-' . str_pad( $index++, 2, '0', STR_PAD_LEFT );
+	while ( get_posts( array( 'post_type' => 'sales_document', 'post_status' => co_sales_document_statuses(), 'numberposts' => 1, 'meta_key' => '_sales_number', 'meta_value' => $number ) ) ) $number = $base . '-' . str_pad( $index++, 2, '0', STR_PAD_LEFT );
 	return $number;
 }
 function co_sales_default_concept() {
@@ -90,8 +93,9 @@ function co_sales_find_derived_document( $source_id, $type, $installment ) {
 }
 
 function co_sales_assets() { ?>
-	<style><?php include CO_THEME_DIR . '/assets/sales-documents.css'; include CO_THEME_DIR . '/assets/sales-print.css'; include CO_THEME_DIR . '/assets/project-billing.css'; ?></style>
+	<style><?php include CO_THEME_DIR . '/assets/sales-documents.css'; include CO_THEME_DIR . '/assets/sales-print.css'; include CO_THEME_DIR . '/assets/project-billing.css'; include CO_THEME_DIR . '/assets/workspace-ui.css'; ?></style>
 <script src="<?php echo esc_url( get_template_directory_uri() . '/assets/sales-documents.js?v=' . filemtime( CO_THEME_DIR . '/assets/sales-documents.js' ) ); ?>" defer></script>
+<script src="<?php echo esc_url( get_template_directory_uri() . '/assets/sales-wht.js?v=' . filemtime( CO_THEME_DIR . '/assets/sales-wht.js' ) ); ?>" defer></script>
 <script src="<?php echo esc_url( get_template_directory_uri() . '/assets/project-billing.js?v=' . filemtime( CO_THEME_DIR . '/assets/project-billing.js' ) ); ?>" defer></script>
 	<script>document.addEventListener('DOMContentLoaded',()=>{const q=(s,p=document)=>p.querySelector(s);document.querySelectorAll('[data-sales-confirm]').forEach(a=>a.addEventListener('click',e=>{if(!confirm(a.dataset.salesConfirm))e.preventDefault()}));const client=q('#sales-client'),project=q('#sales-project');project?.addEventListener('change',()=>{const o=project.selectedOptions[0];if(o?.dataset.client&&client&&!client.value)client.value=o.dataset.client});q('[data-add-issuer]')?.addEventListener('click',()=>{const list=q('.sales-issuer-list'),row=list.querySelector('.sales-issuer-row').cloneNode(true);row.querySelectorAll('input,textarea').forEach(i=>{i.value='';if(i.name==='issuer_id[]')i.value='issuer_'+Date.now()});row.querySelector('[data-signature-preview]')?.replaceChildren();list.appendChild(row)});document.addEventListener('click',e=>{const remove=e.target.closest('[data-remove-issuer]');if(remove&&document.querySelectorAll('.sales-issuer-row').length>1)remove.closest('.sales-issuer-row').remove();const pick=e.target.closest('[data-pick-signature]');if(pick&&window.wp?.media){e.preventDefault();const row=pick.closest('.sales-issuer-row'),frame=wp.media({title:'Choose signature',button:{text:'Use signature'},multiple:false});frame.on('select',()=>{const item=frame.state().get('selection').first().toJSON();row.querySelector('[name="issuer_signature_id[]"]').value=item.id;row.querySelector('[data-signature-preview]').innerHTML='<img src="'+(item.sizes?.medium?.url||item.url)+'" alt="Signature">'});frame.open()}})});</script>
 <?php }
@@ -111,8 +115,14 @@ add_action( 'admin_post_co_sales_save_settings', function () {
 
 function co_sales_save_document_data() {
 	$id = absint( $_POST['document_id'] ?? 0 ); $type = sanitize_key( $_POST['document_type'] ?? 'quotation' ); if ( ! isset( co_sales_types()[$type] ) ) $type = 'quotation'; $client_id = absint( $_POST['client_id'] ?? 0 ); if ( 'sales_client' !== get_post_type( $client_id ) ) throw new RuntimeException( 'Select a valid client.' ); $date = sanitize_text_field( $_POST['issue_date'] ?? wp_date( 'Y-m-d' ) ); $installment = absint( $_POST['installment_no'] ?? 0 );
-	if ( $id && 'sales_document' !== get_post_type( $id ) ) throw new RuntimeException( 'Invalid document.' );
+	if ( $id && ( 'sales_document' !== get_post_type( $id ) || 'publish' !== get_post_status( $id ) ) ) throw new RuntimeException( 'Invalid document.' );
 	if ( $id ) $type = co_sales_meta( $id, 'document_type' );
+	if ( $id && ( co_sales_financial_locked( $id ) || co_sales_wht_files( $id, true ) ) && (string) co_sales_meta( $id, 'issuer_id' ) !== sanitize_key( $_POST['issuer_id'] ?? '' ) ) throw new RuntimeException( 'ผู้ออกเอกสารล็อกตาม QO / Invoice แล้ว เพื่อให้รวบรวมภาษีตรงกับเอกสารเดิม' );
+	$issuer_key = sanitize_key( $_POST['issuer_id'] ?? '' ); $issuer = null;
+	$historical_issuer = co_sales_meta( $id, 'issuer_snapshot' );
+	if ( $historical_issuer && (string) co_sales_meta( $id, 'issuer_id' ) === $issuer_key ) { $issuer = $historical_issuer; $issuer['id'] = $issuer_key; }
+	else foreach ( co_sales_issuers() as $candidate ) if ( (string) $candidate['id'] === $issuer_key ) $issuer = $candidate;
+	if ( ! $issuer ) throw new RuntimeException( 'กรุณาเลือกผู้ออกเอกสารที่มีอยู่ในระบบ' );
 	$project_id = absint( $_POST['project_id'] ?? 0 );
 	if ( $project_id && 'client_project' !== get_post_type( $project_id ) ) throw new RuntimeException( 'Project ไม่ถูกต้อง' );
 	$old_project = $id ? absint( co_sales_meta( $id, 'project_id' ) ) : 0;
@@ -153,7 +163,7 @@ function co_sales_save_document_data() {
 	if ( ! $id && 'receipt' === $type ) throw new RuntimeException( 'กรุณาออก Receipt จาก Invoice ที่บันทึกรับเงินแล้ว' );
 	if ( $id && 'sales_document' === get_post_type( $id ) ) { $number = co_sales_meta( $id, 'number' ); wp_update_post( array( 'ID' => $id, 'post_title' => $number ) ); } else { list( $id, $number ) = co_sales_create_numbered_document( $type, $client_id, $date, $installment ); }
 	if ( is_wp_error( $id ) || ! $id ) throw new RuntimeException( 'ไม่สามารถบันทึกเอกสารได้' );
-	$issuer = co_sales_issuer( sanitize_key( $_POST['issuer_id'] ?? '' ) ); $client = get_post( $client_id );
+	$client = get_post( $client_id );
 	if ( $items ) update_post_meta( $id, '_sales_items', $items );
 	update_post_meta( $id, '_sales_body', implode( "\n\n", array_map( fn( $item ) => implode( "\n", array_column( co_sales_description_lines( $item ), 'text' ) ), $items ) ) );
 	$percent = 'quotation' === $type ? 100 : (float) $schedule[0]['percent'];
@@ -165,8 +175,6 @@ function co_sales_save_document_data() {
 	if ( 'quotation' !== $type && ( '' === $title || preg_match( '/^งวดที่ \d+\s*:/u', $title ) ) ) $_POST['document_title'] = wp_slash( 'งวดที่ ' . $installment . ' : ' . $percent . '% ' . $schedule[0]['description'] );
 	$old_snapshot = co_sales_meta( $id, 'client_snapshot' );
 	if ( $old_snapshot && (int) co_sales_meta( $id, 'client_id' ) === $client_id ) $preserve_client = $old_snapshot;
-	$old_issuer = co_sales_meta( $id, 'issuer_snapshot' );
-	if ( $old_issuer && co_sales_meta( $id, 'issuer_id' ) === $issuer['id'] ) $issuer = $old_issuer;
 	$snapshot = array( 'name' => $client->post_title, 'name_en' => co_sales_meta( $client_id, 'company_name_en' ), 'address' => co_sales_meta( $client_id, 'address' ), 'tax_id' => co_sales_meta( $client_id, 'tax_id' ), 'contact_name' => co_sales_meta( $client_id, 'contact_name' ), 'phone' => co_sales_meta( $client_id, 'phone' ), 'email' => co_sales_meta( $client_id, 'email' ) );
 	update_post_meta( $id, '_sales_number', $number ); update_post_meta( $id, '_sales_document_type', $type ); update_post_meta( $id, '_sales_client_id', $client_id ); update_post_meta( $id, '_sales_project_id', absint( $_POST['project_id'] ?? 0 ) ); update_post_meta( $id, '_sales_source_document_id', absint( $_POST['source_document_id'] ?? 0 ) ); update_post_meta( $id, '_sales_installment_no', $installment ); update_post_meta( $id, '_sales_issue_date', $date ); update_post_meta( $id, '_sales_status', isset( co_sales_statuses()[sanitize_key( $_POST['document_status'] ?? '' )] ) ? sanitize_key( $_POST['document_status'] ) : 'draft' ); update_post_meta( $id, '_sales_client_snapshot', $preserve_client ?? $snapshot ); update_post_meta( $id, '_sales_issuer_id', sanitize_key( $_POST['issuer_id'] ?? '' ) ); update_post_meta( $id, '_sales_issuer_snapshot', $issuer ); update_post_meta( $id, '_sales_title', sanitize_text_field( wp_unslash( $_POST['document_title'] ?? '' ) ) );  update_post_meta( $id, '_sales_subtotal', max( 0, (float) ( $_POST['subtotal'] ?? 0 ) ) ); update_post_meta( $id, '_sales_wht_rate', min( 100, max( 0, (float) ( $_POST['wht_rate'] ?? 3 ) ) ) ); update_post_meta( $id, '_sales_payment_schedule', co_sales_parse_schedule( wp_unslash( $_POST['payment_schedule'] ?? '' ) ) ); update_post_meta( $id, '_sales_payment_schedule_text', sanitize_textarea_field( wp_unslash( $_POST['payment_schedule'] ?? '' ) ) ); update_post_meta( $id, '_sales_notes', sanitize_textarea_field( wp_unslash( $_POST['notes'] ?? '' ) ) );
 	co_sales_sync_payment( $id );

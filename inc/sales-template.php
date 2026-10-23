@@ -109,9 +109,9 @@ function co_sales_item_editor( $item, $index ) {
 		return 'rich' !== ( $item['format'] ?? '' ) && co_sales_description_is_bold( $row['text'] ) ? '<strong>' . $row['html'] . '</strong>' : $row['html'];
 	}, co_sales_description_lines( $item ) ); ?>
 	<details class="sales-item-editor" data-sales-item>
-		<summary class="sales-item-summary"><span class="sales-item-caption"><strong data-item-number>รายการที่ <?php echo $index + 1; ?></strong><span data-item-preview><?php echo esc_html( $heading ?: 'รายการใหม่ — กดเพื่อเพิ่มรายละเอียด' ); ?></span></span><strong data-item-amount><?php echo '' === (string) $item['amount'] ? 'ยังไม่ระบุมูลค่า' : '฿' . esc_html( co_sales_money( $item['amount'] ) ); ?></strong><span class="sales-item-toggle"><span class="sales-item-expand">เปิดรายละเอียด</span><span class="sales-item-collapse">ย่อรายละเอียด</span></span></summary>
+		<summary class="sales-item-summary"><span class="sales-item-caption"><strong data-item-number>รายการที่ <?php echo $index + 1; ?></strong><span data-item-preview><?php echo esc_html( $heading ?: 'รายการใหม่ — กดเพื่อเพิ่มรายละเอียด' ); ?></span></span><strong data-item-amount><?php echo '' === (string) $item['amount'] ? 'ยังไม่ระบุมูลค่า' : '฿' . esc_html( co_sales_money( $item['amount'] ) ); ?></strong><button type="button" class="sales-link danger sales-item-remove" data-remove-item aria-label="ลบรายการที่ <?php echo $index + 1; ?>">ลบรายการ</button><span class="sales-item-toggle"><span class="sales-item-expand">เปิดรายละเอียด</span><span class="sales-item-collapse">ย่อรายละเอียด</span></span></summary>
 		<div class="sales-item-body">
-		<div class="sales-item-head"><strong>รายละเอียดงาน / รายการ</strong><button type="button" class="sales-link danger" data-remove-item>ลบรายการ</button></div>
+		<div class="sales-item-head"><strong>รายละเอียดงาน / รายการ</strong></div>
 		<label>คำอธิบาย / Description<textarea name="item_text[]" rows="8"><?php echo esc_textarea( $item['text'] ); ?></textarea></label>
 		<input type="hidden" name="item_format[]" value="<?php echo 'rich' === ( $item['format'] ?? '' ) ? 'rich' : 'plain'; ?>">
 		<template data-description-initial><?php echo implode( '<br>', $initial ); ?></template>

@@ -1,0 +1,165 @@
+/* Shared screen-only foundations. Printed quotations/invoices/receipts keep their A4 layout. */
+:root{
+ --co-ui-blue:#245dcc;--co-ui-ink:#101b35;--co-ui-muted:#637596;--co-ui-line:#d9e3f0;
+ --co-ui-bg:#f3f6fb;--co-ui-pale:#edf3fc;--co-ui-font:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ --co-ui-space-1:4px;--co-ui-space-2:8px;--co-ui-space-3:12px;--co-ui-space-4:16px;--co-ui-space-5:24px;
+ --co-ui-radius:12px;--co-ui-control-radius:8px;--co-ui-control-height:40px;
+}
+@media screen{
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal,.co-ma-report,.project-brief){font-family:var(--co-ui-font);font-size:14px;line-height:1.55}
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal,.co-ma-report) *,
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal,.co-ma-report) *:before,
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal,.co-ma-report) *:after{box-sizing:border-box}
+ :is(.sales-wrap,.crm-wrap,.co-ma-wrap){max-width:1500px;margin:16px 20px 28px 0;padding:0;color:var(--co-ui-ink)}
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal){--blue:var(--co-ui-blue);--navy:var(--co-ui-ink);--ink:var(--co-ui-ink);--line:var(--co-ui-line);--muted:var(--co-ui-muted)}
+ :is(.sales-panel,.crm-panel,.crm-drawer-section,.co-ma-section,.co-ma-client-head,.co-ma-balance){border-color:var(--co-ui-line);border-radius:var(--co-ui-radius);padding:var(--co-ui-space-4);box-shadow:none}
+ .co-ma-section{border:1px solid var(--co-ui-line);background:#fff}
+ .sales-panel{margin:var(--co-ui-space-3) 0}
+ :is(.sales-panel-head,.crm-section-heading,.co-ma-section>header){gap:var(--co-ui-space-3);align-items:center;flex-wrap:wrap;margin-bottom:var(--co-ui-space-3)}
+ :is(.sales-panel h2,.crm-panel h2,.crm-drawer-section>h3,.co-ma-section h2){font-size:18px;line-height:1.4;margin:0 0 12px;font-weight:750;color:var(--co-ui-ink)}
+ :is(.sales-panel-head,.crm-section-heading,.co-ma-section>header) :is(h2,h3){margin:0}
+ :is(.sales-panel-head,.crm-section-heading,.co-ma-section>header) p{font-size:12px;line-height:1.5;margin:4px 0 0;color:var(--co-ui-muted)}
+ :is(.sales-hero,.crm-hero,.crm-detail-head,.co-ma-top){padding:24px;border-radius:var(--co-ui-radius);gap:var(--co-ui-space-4);background:linear-gradient(120deg,#183d86,#3473e3);align-items:center;flex-wrap:wrap}
+ :is(.sales-hero,.crm-hero,.crm-detail-head,.co-ma-top) h1{font-size:30px;line-height:1.2;margin:5px 0;color:#fff}
+ :is(.sales-hero,.crm-hero,.co-ma-top) p{font-size:13px;line-height:1.5;margin:0;color:#dce8ff}
+ :is(.sales-hero,.crm-hero) small,.co-ma-kicker{font-size:10px;line-height:1.5;letter-spacing:.12em}
+ :is(.sales-stats,.crm-stats,.crm-finance,.co-ma-overview){border-color:var(--co-ui-line);box-shadow:none;overflow:hidden;margin:12px 0;border-radius:var(--co-ui-radius)}
+ :is(.sales-stats,.crm-stats,.crm-finance,.co-ma-overview)>div{padding:14px 16px;min-width:0}
+ :is(.sales-stats,.crm-stats,.crm-finance,.co-ma-overview) strong{font-size:24px;line-height:1.3;margin:4px 0 0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+ :is(.sales-stats,.crm-stats,.crm-finance,.co-ma-overview) small{font-size:11px;line-height:1.5;letter-spacing:.02em}
+ :is(.sales-btn,.crm-btn,.co-ma-btn){box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--co-ui-control-height);height:auto;max-width:100%;padding:8px 13px;border-radius:var(--co-ui-control-radius);font-family:var(--co-ui-font);font-size:13px;font-weight:750;line-height:22px;white-space:normal;vertical-align:middle}
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal) :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=submit]):not([type=button]),select,textarea){box-sizing:border-box;max-width:100%;min-height:var(--co-ui-control-height);margin-top:5px;padding:8px 11px;border-radius:var(--co-ui-control-radius);font-family:var(--co-ui-font);font-size:15px!important;font-weight:500;line-height:22px}
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal) select{height:var(--co-ui-control-height);padding-right:38px!important}
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal) textarea{height:auto;min-height:90px;resize:vertical}
+ :is(.sales-form,.crm-grid,.co-ma-inline-form,.co-ma-modal,.crm-modal,.crm-drawer) label{font-size:12px;line-height:1.5;margin:0 0 12px;font-weight:700;color:var(--co-ui-muted)}
+ :is(.sales-grid,.crm-grid,.co-ma-form-grid){gap:0 14px}
+ :is(.sales-grid.finance)>div{margin-bottom:12px;padding:10px 12px}
+ .sales-form input[type=checkbox],.sales-form input[type=radio]{width:auto;min-height:0}
+ .sales-tabs{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:12px 0}
+ .sales-tabs>a{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:7px 13px;border:1px solid var(--co-ui-line);border-radius:8px;font-size:13px;line-height:22px}
+ .sales-table-wrap :is(th,td){padding:11px 10px;vertical-align:middle}
+ .sales-table-wrap th{font-size:11px;line-height:1.5;text-transform:none}
+ .sales-table-wrap td{font-size:14px;line-height:1.55}
+ .sales-table-wrap td .sales-amount-before{margin-top:3px;font-size:12px}
+ .sales-list-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+ .sales-list-heading>h2{margin:0;flex:0 0 auto}
+ .sales-list-heading>.sales-wht-filters{margin-left:auto;flex:0 1 auto;flex-wrap:nowrap}
+ .sales-wht-filters{display:flex;align-items:flex-end;flex-wrap:wrap;gap:8px 12px;margin:0}
+ .sales-wht-filters label{display:flex;flex-direction:column;gap:4px;flex:0 1 230px;min-width:180px;margin:0}
+ .sales-wht-filters :is(input,select){margin:0;min-height:40px;height:40px}
+ .sales-wht-filters>.sales-btn{margin:0;min-height:40px}
+ .sales-wht-filters>a{display:inline-flex;align-items:center;min-height:40px;font-size:12px;white-space:nowrap}
+ .sales-wht-bulk-toolbar{position:static;padding:8px 10px;margin-bottom:10px;gap:8px 12px}
+ .sales-wht-bulk-toolbar .sales-btn{min-height:36px;padding:6px 11px;font-size:12px}
+ .sales-task-hub{margin:12px 0}
+ .sales-task-hub>h2{font-size:13px;line-height:1.5;font-weight:750;color:var(--co-ui-muted);margin:0 0 7px}
+ .sales-task-grid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:10px}
+ .sales-task-group{border:1px solid var(--co-ui-line);border-radius:10px;min-width:0;background:#fff}
+ .sales-task-group>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;min-height:44px;list-style:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--co-ui-ink)}
+ .sales-task-group>summary::-webkit-details-marker{display:none}
+ .sales-task-group>summary:after{content:"";height:6px;width:6px;flex-shrink:0;border-right:1.5px solid #637596;border-bottom:1.5px solid #637596;transform:rotate(45deg);margin:0 2px 3px 0}
+ .sales-task-group[open]>summary:after{transform:rotate(225deg);margin-top:5px}
+ .sales-task-group>summary>span{flex:1;min-width:0}
+ .sales-task-group>summary>b{padding:2px 7px;min-width:24px;text-align:center;border-radius:20px;background:#edf3fc;color:#245dcc;font-size:12px;font-variant-numeric:tabular-nums}
+ .sales-task-group.has-items>summary>b{background:#fff1d9;color:#85521c}
+ .sales-task-group>div{padding:0 12px 8px;max-height:180px;overflow:auto;border-top:1px solid #edf1f6}
+ .sales-task-group p{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px;font-size:13px;line-height:1.6;margin:7px 0}
+ .sales-task-group p small{font-size:12px}
+ .sales-task-group>summary:focus-visible{outline:2px solid var(--co-ui-blue);outline-offset:2px;border-radius:8px}
+ .crm-board{gap:12px;padding:12px 0}
+ .crm-board>section{padding:10px;min-height:280px;border-radius:12px}
+ .crm-card{padding:12px;margin:8px 0;border-radius:10px}
+ .crm-card p{min-height:0;font-size:12px;margin:8px 0 12px}
+ .crm-card h3{font-size:15px;line-height:1.4;margin:5px 0}
+ .crm-card small,.crm-card div{font-size:12px}
+ .crm-card-brief{margin:10px 0 0;padding:7px 9px;font-size:12px}
+ .crm-drawer>aside>header{padding:18px 20px;gap:12px}
+ .crm-drawer>aside{visibility:hidden;transition:transform .28s ease,visibility 0s .28s}.crm-drawer.open>aside{visibility:visible;transition-delay:0s}
+ .crm-drawer header h2{font-size:24px;line-height:1.25}
+ .crm-drawer-body{padding:16px}
+ .crm-drawer-summary{margin-bottom:12px}.crm-drawer-summary div{padding:12px}.crm-drawer-summary small{font-size:11px}
+ .crm-drawer-section{margin-top:12px;padding:16px}.crm-drawer form{padding:16px}.crm-drawer-section>form{padding:0}
+ .crm-drawer-actions{margin:12px -16px -16px;padding:12px 16px;bottom:-16px}
+ .crm-modal-intro{padding:20px 24px 10px}.crm-modal form{padding:0 24px}
+ .crm-modal h2,.co-ma-modal h2{font-size:24px;margin:4px 0 12px}
+ .crm-form-actions{margin:12px -24px 0;padding:12px 24px;min-height:0}
+ .crm-modal .crm-btn,.crm-form-actions .crm-btn[type=submit]{min-height:40px!important;min-width:110px}
+ .co-ma-modal>div{padding:20px 20px 0;border-radius:12px}
+ .co-ma-form-actions{margin:12px -20px 0;padding:12px 20px;gap:8px}
+ .co-ma-modal[data-ma-modal=worklog] form>.co-ma-btn[type=submit]{width:calc(100% + 40px);margin:12px -20px 0;padding:12px 20px}
+ .co-ma-layout{grid-template-columns:250px minmax(0,1fr);gap:12px;margin-top:12px}
+ .co-ma-main{display:grid;gap:12px;align-content:start}
+ .co-ma-main>section{margin:0;border-radius:12px}
+ .co-ma-clients{padding:12px;border-radius:12px}.co-ma-clients>a{padding:9px;margin-top:5px}
+ .co-ma-clients>a b{font-size:13px}.co-ma-clients>a small{font-size:11px}
+ .co-ma-overview strong{font-size:24px}.co-ma-client-head h2{font-size:21px}
+ .co-ma-balance{padding:16px;gap:14px}.co-ma-balance p{margin:5px 0;font-size:12px}
+ .co-ma-balance dl{gap:10px;flex-wrap:wrap}.co-ma-balance dl div{padding:9px 12px}
+ .co-ma-section>header p,.co-ma-client-head p{font-size:12px}
+ .co-ma-projects article{padding:11px;border-radius:9px}.co-ma-projects h3{font-size:14px}.co-ma-projects p{font-size:12px}
+ .co-ma-table th{font-size:11px;padding:10px 8px}.co-ma-table td{font-size:13px;padding:10px 8px}
+ .co-ma-detail-grid,.co-ma-model-layout{gap:12px}.co-ma-detail-grid{margin-top:12px}
+ .co-ma-model-card,.co-ma-month-history,.co-ma-detail-logs{margin-top:12px}
+ .co-ma-inline-form label{margin:0 0 12px}
+ .co-ma-package-types b{font-size:13px}.co-ma-package-types small{font-size:11px}.co-ma-package-types span{padding:10px}
+ .co-ma-duration label,.co-ma-package-types label{position:relative}
+ :is(.co-ma-duration,.co-ma-package-types) input[type=radio]{position:absolute;left:0;top:0;width:1px!important;height:1px!important;min-height:0!important;max-width:1px;padding:0;margin:0;border:0;opacity:0;clip-path:inset(50%)}
+ :is(.co-ma-duration,.co-ma-package-types) input:focus-visible+span{outline:2px solid var(--co-ui-blue);outline-offset:2px}
+ .brief-toolbar{height:60px}.brief-hero{padding:32px 24px 68px}
+ .brief-summary{margin-top:-36px;margin-bottom:16px;border-radius:12px}.brief-summary__item{padding:16px 18px}
+ .brief-layout,.customer-brief-sections{gap:12px}.brief-card{padding:20px;border-radius:12px}
+ .brief-card__head{padding-bottom:12px;margin-bottom:14px}
+ .customer-report-nav{margin:16px auto;gap:6px}.customer-report-nav a{padding:7px 11px}
+ .customer-subheading{margin:16px 0 10px}.customer-installment,.customer-worklogs article{padding:14px}
+ .co-ma-report{margin:20px auto 40px}.co-ma-report-hero{padding:30px 28px 62px;border-radius:12px 12px 0 0}
+ .co-ma-report-hero h1{font-size:36px}.co-ma-report-summary{border-radius:12px}.co-ma-report-summary>div{padding:14px 16px}
+ .co-ma-report-summary small{font-size:10px}.co-ma-report-card{padding:20px;margin-top:12px;border-radius:12px;box-shadow:none}
+ .project-report-section{padding:20px;margin:16px 0;border-radius:12px;box-shadow:none}.project-report-section h2{font-size:20px;margin-bottom:16px}
+ .project-report-two{gap:20px}.project-report-document,.project-report-installment{padding:16px}
+ .shell .form-card{margin-top:16px;padding:24px;border-radius:12px}.shell .brand{height:60px;min-height:60px}
+ .shell .onboarding-hero{padding-top:32px;padding-bottom:64px}.shell .form-card h1{font-size:30px}
+ .shell .fields{gap:12px}.shell .form-card label{margin:12px 0}.shell .form-nav{margin-top:20px;padding-top:16px}
+ body.login #login{padding:26px 30px;border-radius:12px}.login .co-login-intro{margin-bottom:18px}
+ .login .co-login-intro h1{font-size:30px}.login form .input{min-height:44px;font-size:16px!important}
+ .co-admin-hero{padding:24px;margin-top:16px;margin-bottom:16px;border-radius:12px}.co-admin-hero h1{font-size:30px}
+ .co-system-screen .wp-list-table tbody tr{padding:16px;border-radius:12px;box-shadow:none}.co-system-screen .wp-list-table tbody td{padding:6px 0}
+ .co-system-screen .wp-list-table tbody td:before{font-size:11px}.co-system-screen .wp-list-table .column-date{font-size:12px}
+ .form-table td{padding:10px 12px}.form-table th{padding-top:15px;padding-bottom:10px}
+}
+@media screen and (max-width:1000px){.co-ma-layout{grid-template-columns:220px minmax(0,1fr)}.co-ma-balance{grid-template-columns:auto minmax(0,1fr)}.co-ma-balance dl{grid-column:1/-1}}
+@media screen and (max-width:782px){
+ :is(.sales-wrap,.crm-wrap,.co-ma-wrap){margin:12px 10px 20px 0}
+ :is(.sales-hero,.crm-hero,.crm-detail-head,.co-ma-top){padding:20px;align-items:flex-start;flex-direction:column}
+ :is(.sales-hero,.crm-hero,.crm-detail-head,.co-ma-top) h1{font-size:27px}
+ .sales-list-heading{align-items:stretch}.sales-list-heading>.sales-wht-filters{flex:1 1 100%}
+ .sales-task-grid{grid-template-columns:1fr;gap:6px}.sales-task-group>summary{padding:9px 12px;min-height:42px}
+ .co-ma-layout{grid-template-columns:1fr}.co-ma-clients{display:flex;gap:8px;overflow:auto}
+ .co-ma-clients>header{min-width:90px}.co-ma-clients>a{min-width:190px;margin-top:0}
+ .brief-hero{padding:28px 18px 60px}.brief-card,.co-ma-report-card{padding:16px}
+ .co-ma-report-hero{padding:24px 20px 58px}.co-ma-report-hero h1{font-size:30px}
+ .co-ma-report-summary{margin-left:10px;margin-right:10px}
+}
+@media screen and (max-width:600px){
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal) :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=submit]):not([type=button]),select,textarea){font-size:16px!important;min-height:44px}
+ :is(.sales-wrap,.crm-wrap,.crm-drawer,.crm-modal,.co-ma-wrap,.co-ma-modal) select{height:44px}
+ :is(.sales-panel,.crm-panel,.crm-drawer-section,.co-ma-section,.co-ma-client-head,.co-ma-balance){padding:14px}
+ .sales-list-heading>.sales-wht-filters{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;width:100%;gap:8px}
+ .sales-wht-filters label{min-width:0;flex-basis:auto}.sales-list-heading .sales-wht-filters label{grid-column:1/-1}
+ .sales-wht-filters label select{width:100%}.sales-wht-filters>a{min-height:44px}
+ .sales-wht-bulk-toolbar{position:static;padding:9px;gap:8px}
+ .sales-wht-bulk-toolbar>div:last-child{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+ .sales-wht-bulk-toolbar .sales-btn{min-height:44px;width:100%;padding:7px 8px;line-height:1.4;font-size:12px}
+ .sales-wrap :is(.sales-documents-with-wht,.sales-wht-index-table) tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;padding:14px}
+ .sales-wrap :is(.sales-documents-with-wht,.sales-wht-index-table) td{padding:0;min-width:0}
+ .sales-wrap :is(.sales-documents-with-wht,.sales-wht-index-table) td.sales-document-title-cell{grid-column:1/-1;padding-right:30px}
+ .sales-wrap .sales-documents-with-wht td:last-child{grid-column:1/-1;text-align:right;padding-top:4px}
+ .sales-wrap .sales-wht-index-table td:last-child{grid-column:1/-1}
+ .crm-modal-intro{padding:18px 16px 8px}.crm-modal form{padding:0 16px}.crm-form-actions{margin-left:-16px;margin-right:-16px;padding:12px 16px}
+ .co-ma-modal>div{padding:18px 16px 0}.co-ma-form-actions{margin-left:-16px;margin-right:-16px;padding:12px 16px}
+ .co-ma-modal[data-ma-modal=worklog] form>.co-ma-btn[type=submit]{width:calc(100% + 32px);margin-left:-16px;margin-right:-16px}
+ .co-ma-balance{grid-template-columns:1fr}.co-ma-balance dl{justify-content:center}
+ .shell .form-card{padding:18px 16px;margin-top:12px}.shell .onboarding-hero{padding:28px 17px 56px}
+ .shell .form-card h1{font-size:27px}.shell .brand{height:56px;min-height:56px}
+ .brief-summary__item{padding:13px 15px}.project-report-section{padding:16px}
+ body.login #login{padding:24px 20px}
+}

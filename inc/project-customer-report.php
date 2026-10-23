@@ -151,6 +151,7 @@ function co_crm_render_customer_project_report( $token, $document = 0 ) {
 	if ( $document ) { include CO_THEME_DIR . '/assets/sales-documents.css'; include CO_THEME_DIR . '/assets/sales-print.css'; }
 	else include CO_THEME_DIR . '/assets/brief-report.css';
 	include CO_THEME_DIR . '/assets/project-customer-report.css';
+	if ( ! $document ) include CO_THEME_DIR . '/assets/workspace-ui.css';
 	echo '</style></head><body class="co-ma-report-page project-customer-page' . ( $document ? ' customer-document-page' : '' ) . '">';
 	if ( $document ) {
 		echo '<div class="customer-document-toolbar"><a href="' . esc_url( co_crm_customer_report_url( $token ) ) . '">← กลับรายงานโปรเจกต์</a><button type="button" onclick="window.print()">Print / Save PDF</button></div>';

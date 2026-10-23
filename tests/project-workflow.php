@@ -1,7 +1,8 @@
 <?php
 // Run with PHP CLI. All posts, options and notifications are isolated in memory.
 if ( PHP_SAPI !== 'cli' ) exit;
-define( 'ABSPATH', '/' ); define( 'CO_THEME_DIR', dirname( __DIR__ ) );
+define( 'ABSPATH', dirname( __DIR__ ) . '/' ); define( 'CO_THEME_DIR', dirname( __DIR__ ) );
+$_SERVER['DOCUMENT_ROOT'] = CO_THEME_DIR;
 $posts = $meta = $options = $actions = array(); $allowed = $nonce_valid = true; $notices = 0;
 function add_action( $name, $fn, ...$args ) { $GLOBALS['actions'][$name][] = $fn; }
 function add_filter( ...$args ) {}
@@ -20,6 +21,8 @@ function esc_url_raw( $s ) { return $s; }
 function wp_date( $f, $t = null ) { return date( $f, $t ?? strtotime( '2026-10-22 12:00:00' ) ); }
 function current_time( $f ) { return 'timestamp' === $f ? strtotime( '2026-10-22 12:00:00' ) : wp_date( $f ); }
 function current_user_can( ...$a ) { return $GLOBALS['allowed']; }
+function get_current_user_id() { return 1; }
+function sanitize_file_name( $name ) { return preg_replace( '/[^\pL\pN_.-]+/u', '-', basename( str_replace( '\\', '/', $name ) ) ); }
 function check_admin_referer( ...$a ) { if ( ! $GLOBALS['nonce_valid'] ) throw new RuntimeException( 'Invalid nonce' ); }
 function is_wp_error( $v ) { return false; }
 function get_option( $key, $default = false ) { return $GLOBALS['options'][$key] ?? $default; }
@@ -36,10 +39,10 @@ function update_post_meta( $id, $key, $value ) { $GLOBALS['meta'][$id][$key] = $
 function delete_post_meta( $id, $key ) { unset( $GLOBALS['meta'][$id][$key] ); }
 function wp_insert_post( $data, ...$args ) { $id = $data['ID'] ?? count( $GLOBALS['posts'] ) + 1; $GLOBALS['posts'][$id] = (object) array_merge( array( 'post_date' => '2026-10-01', 'post_title' => '' ), (array) get_post( $id ), $data, array( 'ID' => $id ) ); return $id; }
 function wp_update_post( $data ) { return wp_insert_post( $data ); }
-function wp_trash_post( $id ) { $GLOBALS['posts'][$id]->post_status = 'trash'; }
+function wp_trash_post( $id ) { $GLOBALS['posts'][$id]->post_status = 'trash'; return $GLOBALS['posts'][$id]; }
 function get_posts( $args ) {
 	$result = array_values( array_filter( $GLOBALS['posts'], function ( $p ) use ( $args ) {
-		if ( ( $args['post_type'] ?? '' ) !== $p->post_type || ( 'any' !== ( $args['post_status'] ?? 'publish' ) && ( $args['post_status'] ?? 'publish' ) !== $p->post_status ) ) return false;
+		if ( ( $args['post_type'] ?? '' ) !== $p->post_type || ( 'any' !== ( $args['post_status'] ?? 'publish' ) && ! in_array( $p->post_status, (array) ( $args['post_status'] ?? 'publish' ), true ) ) ) return false;
 		if ( isset( $args['meta_key'], $args['meta_value'] ) && (string) get_post_meta( $p->ID, $args['meta_key'] ) !== (string) $args['meta_value'] ) return false;
 		foreach ( $args['meta_query'] ?? array() as $q ) if ( is_array( $q ) && (string) get_post_meta( $p->ID, $q['key'] ) !== (string) $q['value'] ) return false;
 		return true;
@@ -96,6 +99,13 @@ expect_workflow( co_sales_meta( $quote, 'installment_no' ) === 0, 'Quotation is 
 expect_workflow( co_sales_meta( 0, 'issue_date', wp_date( 'Y-m-d' ) ) === '2026-10-22', 'new document metadata uses defaults for invalid ID zero' );
 expect_workflow( co_project_quote( $project ) === 0, 'draft quote never becomes agreement automatically' );
 rejected_workflow( fn() => co_project_derive_document( $quote, 1 ), 'select agreement before invoice' );
+$template_items = co_sales_default_items();
+document_workflow( $quote, $project, array( 'item_text' => array( $template_items[0]['text'], $template_items[2]['text'] ), 'item_amount' => array( 20000, '' ) ) );
+document_workflow( $quote, $project, array( 'item_text' => array( $template_items[2]['text'] ), 'item_amount' => array( 20000 ) ) );
+expect_workflow( count( co_sales_items( $quote ) ) === 1 && co_sales_items( $quote )[0]['text'] === $template_items[2]['text'], 'removed default items stay removed after saving and reloading QO' );
+document_workflow( $quote, $project, array( 'item_text' => array( '' ), 'item_format' => array( 'rich' ), 'item_amount' => array( '' ), 'discount' => 0 ) );
+expect_workflow( count( co_sales_items( $quote ) ) === 1 && co_sales_items( $quote )[0]['text'] === '' && co_sales_items( $quote )[0]['amount'] === '', 'clearing last item does not restore default content' );
+document_workflow( $quote, $project );
 action_workflow( 'admin_post_co_project_accept_quote', array( 'project_id' => $project, 'quotation_id' => $quote ) );
 expect_workflow( co_project_quote( $project ) === $quote && (float) co_crm_meta( $project, 'net_total' ) === 18000.0, 'QO controls discounted sale value' );
 expect_workflow( co_project_financials( $project )['net'] === 17460.0, 'QO controls net value' );
@@ -255,6 +265,12 @@ foreach ( array( $quote, $invoice, $receipt ) as $public_doc ) { ob_start(); co_
 ob_start(); co_crm_render_customer_project_report( $old_token ); $revoked_report = ob_get_clean(); expect_workflow( $http_status === 404 && ! str_contains( $revoked_report, 'Website project' ), 'revoked report has no project data' );
 $allowed = true; $nonce_valid = false; rejected_workflow( fn() => action_workflow( 'admin_post_co_project_customer_report_settings', array( 'project' => $project, 'rotate_link' => 1 ) ), 'sharing settings require nonce' ); $nonce_valid = true;
 $mode = $argv[1] ?? 'test';
+ob_start(); co_project_render_tasks(); $task_summary_html = ob_get_clean();
+expect_workflow( substr_count( $task_summary_html, '<details class="sales-task-group' ) === 3 && ! str_contains( $task_summary_html, '<article>' ), 'follow-up tasks are compact expandable summaries, not oversized empty cards' );
+foreach ( array( 'co_crm_assets', 'co_sales_assets', 'co_ma_assets' ) as $asset_renderer ) {
+	ob_start(); $asset_renderer(); $asset_html = ob_get_clean();
+	expect_workflow( str_contains( $asset_html, '--co-ui-control-height:40px' ) && str_contains( $asset_html, '--co-ui-space-4:16px' ), $asset_renderer . ' includes the shared screen UI foundations' );
+}
 if ( $mode !== 'test' ) {
 	$_GET = array( 'project' => $project, 'document' => $invoice );
 	if ( ! str_starts_with( $mode, 'customer-' ) ) echo '<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#f3f6fb;font:14px Tahoma,sans-serif}</style></head><body>';

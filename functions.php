@@ -28,9 +28,12 @@ add_action( 'wp_enqueue_scripts', function () {
 	}
 	wp_enqueue_script( 'client-onboarding', get_template_directory_uri() . '/assets/dist/' . $entry['file'], array(), CO_THEME_VERSION, true );
 	wp_script_add_data( 'client-onboarding', 'type', 'module' );
+	$style_handles = array();
 	foreach ( $entry['css'] ?? array() as $css ) {
 		wp_enqueue_style( 'client-onboarding-' . md5( $css ), get_template_directory_uri() . '/assets/dist/' . $css, array(), CO_THEME_VERSION );
+		$style_handles[] = 'client-onboarding-' . md5( $css );
 	}
+	wp_enqueue_style( 'co-workspace-ui', get_template_directory_uri() . '/assets/workspace-ui.css', $style_handles, filemtime( CO_THEME_DIR . '/assets/workspace-ui.css' ) );
 	wp_localize_script( 'client-onboarding', 'clientOnboarding', array(
 		'endpoint' => esc_url_raw( rest_url( 'client-onboarding/v1/submit' ) ),
 		'nonce' => wp_create_nonce( 'wp_rest' ),

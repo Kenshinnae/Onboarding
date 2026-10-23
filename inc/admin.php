@@ -27,6 +27,7 @@ add_action( 'wp_before_admin_bar_render', function () {
 
 function co_admin_brand_styles() {
 	wp_enqueue_style( 'co-admin-brand', get_template_directory_uri() . '/assets/admin-brand.css', array(), CO_THEME_VERSION );
+	wp_enqueue_style( 'co-workspace-ui', get_template_directory_uri() . '/assets/workspace-ui.css', array( 'co-admin-brand' ), filemtime( CO_THEME_DIR . '/assets/workspace-ui.css' ) );
 }
 add_action( 'admin_enqueue_scripts', 'co_admin_brand_styles' );
 add_action( 'login_enqueue_scripts', 'co_admin_brand_styles' );
