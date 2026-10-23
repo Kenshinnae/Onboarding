@@ -41,6 +41,8 @@ function delete_post_meta( $id, $key ) { unset( $GLOBALS['meta'][$id][$key] ); }
 function wp_insert_post( $data, ...$args ) { $id = $data['ID'] ?? count( $GLOBALS['posts'] ) + 1; $GLOBALS['posts'][$id] = (object) array_merge( array( 'post_date' => '2026-10-01', 'post_title' => '' ), (array) get_post( $id ), $data, array( 'ID' => $id ) ); return $id; }
 function wp_update_post( $data ) { if ( ( $GLOBALS['fail_update_id'] ?? 0 ) === $data['ID'] ) { $GLOBALS['fail_update_id'] = 0; return 0; } return wp_insert_post( $data ); }
 function wp_trash_post( $id ) { $GLOBALS['posts'][$id]->post_status = 'trash'; return $GLOBALS['posts'][$id]; }
+function wp_delete_post( $id, $force = false ) { if ( ( $GLOBALS['fail_delete_id'] ?? 0 ) === $id ) { $GLOBALS['fail_delete_id'] = 0; return false; } $post = get_post( $id ); unset( $GLOBALS['posts'][$id], $GLOBALS['meta'][$id] ); return $post; }
+function clean_post_cache( $id ) {}
 function get_posts( $args ) {
 	$result = array_values( array_filter( $GLOBALS['posts'], function ( $p ) use ( $args ) {
 		if ( ( $args['post_type'] ?? '' ) !== $p->post_type || ( 'any' !== ( $args['post_status'] ?? 'publish' ) && ! in_array( $p->post_status, (array) ( $args['post_status'] ?? 'publish' ), true ) ) ) return false;

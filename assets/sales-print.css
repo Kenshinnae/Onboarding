@@ -24,8 +24,9 @@ body *{visibility:hidden!important}
 .sales-doc-line.is-blank>span:nth-child(2){padding:0}
 .sales-doc-line>strong{padding:0.2mm 2mm;text-align:center;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
 .sales-doc-totals span{padding:1mm 3mm;text-align:right}
-.sales-doc-totals b{padding:1mm 2mm;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
-.sales-doc-totals>div.sales-doc-baht{padding:1mm 3mm;text-align:center}
+.sales-doc-totals b{padding:1mm 2mm;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.sales-doc-totals>div.sales-doc-baht{padding:1mm 2mm;text-align:right}
+.sales-doc-reference-row>b{white-space:nowrap}
 .sales-doc-payment{padding:3mm 4mm;font-size:9pt;line-height:1.6}
 .sales-doc-payment div{margin-top:2mm;white-space:normal}
 .sales-doc-signatures{padding-top:3mm}

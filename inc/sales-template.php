@@ -120,10 +120,16 @@ function co_sales_item_editor( $item, $index ) {
 	</details>
 <?php }
 
-function co_sales_print_header( $id, $type, $client, $issuer ) { ?>
+function co_sales_reference_document( $id ) {
+	$expected = array( 'invoice' => 'quotation', 'receipt' => 'invoice' )[co_sales_meta( $id, 'document_type' )] ?? '';
+	$source = absint( co_sales_meta( $id, 'source_document_id' ) );
+	return $expected && 'sales_document' === get_post_type( $source ) && $expected === co_sales_meta( $source, 'document_type' ) ? $source : 0;
+}
+
+function co_sales_print_header( $id, $type, $client, $issuer ) { $reference = co_sales_reference_document( $id ); ?>
 	<header class="sales-doc-header">
 		<h1><?php echo esc_html( array( 'quotation' => 'ใบเสนอราคา', 'invoice' => 'ใบแจ้งหนี้', 'receipt' => 'ใบเสร็จรับเงิน' )[$type] ); ?><br><span><?php echo esc_html( co_sales_types()[$type] ); ?></span></h1>
-		<div class="sales-doc-party customer"><div><b>ลูกค้า / Customer</b><strong><?php echo esc_html( $client['name'] ?? '' ); ?></strong><b>เลขที่ / No.</b><span><?php echo esc_html( co_sales_meta( $id, 'number' ) ); ?></span></div><div class="address"><b>ที่อยู่ / Address</b><span><?php echo nl2br( esc_html( $client['address'] ?? '' ) ); ?></span><b>วันที่ / Issue</b><span><?php echo esc_html( co_sales_date( co_sales_meta( $id, 'issue_date' ) ) ); ?></span></div><div><b>เลขผู้เสียภาษี / Tax ID</b><span><?php echo esc_html( $client['tax_id'] ?? '' ); ?></span></div><div><b>ผู้ติดต่อ / Attention</b><span><?php echo esc_html( $client['contact_name'] ?? '' ); ?></span><b>T :</b><span><?php echo esc_html( $client['phone'] ?? '' ); ?></span></div></div>
+		<div class="sales-doc-party customer"><div><b>ลูกค้า / Customer</b><strong><?php echo esc_html( $client['name'] ?? '' ); ?></strong><b>เลขที่ / No.</b><span><?php echo esc_html( co_sales_meta( $id, 'number' ) ); ?></span></div><?php if ( $reference ) : ?><div class="sales-doc-reference-row"><span></span><span></span><b>เลขที่อ้างอิง / Ref</b><span><?php echo esc_html( co_sales_meta( $reference, 'number' ) ); ?></span></div><?php endif; ?><div class="address"><b>ที่อยู่ / Address</b><span><?php echo nl2br( esc_html( $client['address'] ?? '' ) ); ?></span><b>วันที่ / Issue</b><span><?php echo esc_html( co_sales_date( co_sales_meta( $id, 'issue_date' ) ) ); ?></span></div><div><b>เลขผู้เสียภาษี / Tax ID</b><span><?php echo esc_html( $client['tax_id'] ?? '' ); ?></span></div><div><b>ผู้ติดต่อ / Attention</b><span><?php echo esc_html( $client['contact_name'] ?? '' ); ?></span><b>T :</b><span><?php echo esc_html( $client['phone'] ?? '' ); ?></span></div></div>
 		<div class="sales-doc-party issuer"><div><b>ผู้ออก / issuer</b><strong><?php echo esc_html( $issuer['name'] ?? '' ); ?></strong><b>ผู้ติดต่อ / Attention</b><span><?php echo esc_html( $issuer['name'] ?? '' ); ?></span></div><div><b>ที่อยู่ / Address</b><span><?php echo nl2br( esc_html( $issuer['address'] ?? '' ) ); ?></span><b>T :</b><span><?php echo esc_html( $issuer['phone'] ?? '' ); ?></span></div><div><b>เลขผู้เสียภาษี / Tax ID</b><span><?php echo esc_html( $issuer['tax_id'] ?? '' ); ?></span><b>Email :</b><span><?php echo esc_html( $issuer['email'] ?? '' ); ?></span></div></div>
 		<div class="sales-doc-columns"><span>รหัส<br>ID no.</span><span>คำอธิบาย<br>Description</span><span>มูลค่าก่อนภาษี<br>Pre-Tax Amount</span></div>
 	</header>

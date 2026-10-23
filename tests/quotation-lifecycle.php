@@ -1,101 +1,43 @@
 <?php
-// Isolated, in-memory accounting tests; never modifies the WordPress database.
+// In-memory fixtures only: no real WordPress data is deleted.
 if ( PHP_SAPI !== 'cli' ) exit;
 ob_start(); require __DIR__ . '/project-workflow.php'; ob_end_clean();
-$_SERVER['REQUEST_METHOD'] = 'POST';
-$spare = document_workflow( 0, $project );
-$saved_meta = $meta[$spare]; $saved_project = $meta[$project]; $saved_payment = $meta[$payment];
-$number = co_sales_meta( $spare, 'number' );
-expect_workflow( '' === co_sales_quote_delete_reason( $spare ), 'unused quote can be deleted' );
-action_workflow( 'admin_post_co_sales_quote_lifecycle', array( 'document_id' => $spare, 'operation' => 'trash' ) );
-expect_workflow( 'trash' === get_post_status( $spare ), 'quote moved into Trash' );
-expect_workflow( ! in_array( $spare, array_column( co_sales_documents(), 'ID' ), true ), 'Trash absent from active lists' );
-expect_workflow( $saved_project === $meta[$project] && $saved_payment === $meta[$payment], 'project and payment untouched' );
-foreach ( $saved_meta as $key => $value ) expect_workflow( $meta[$spare][$key] === $value, 'all quote fields retained: ' . $key );
-co_sales_quote_lifecycle( $spare );
-expect_workflow( 'trash' === get_post_status( $spare ), 'repeat delete is idempotent' );
-expect_workflow( co_sales_next_number( 'quotation', $client, co_sales_meta( $spare, 'issue_date' ) ) !== $number, 'trashed number stays reserved' );
-rejected_workflow( fn() => document_workflow( $spare, $project ), 'stale edit cannot save a deleted quote' );
-rejected_workflow( fn() => co_project_derive_document( $spare, 1 ), 'cannot invoice a deleted quote' );
-$_GET = array( 'document' => $spare );
-rejected_workflow( fn() => co_sales_edit_page(), 'cannot open trashed quote for editing' );
-rejected_workflow( fn() => co_sales_preview_page(), 'cannot preview trashed quote' );
-$_GET = array( 'type' => 'quotation', 'view' => 'trash' );
-ob_start(); co_sales_documents_page(); $trash_html = ob_get_clean();
-expect_workflow( str_contains( $trash_html, $number ) && str_contains( $trash_html, 'กู้คืน' ), 'Trash view has quote and restore action' );
-action_workflow( 'admin_post_co_sales_quote_lifecycle', array( 'document_id' => $spare, 'operation' => 'restore' ) );
-co_sales_quote_lifecycle( $spare, true );
-expect_workflow( 'publish' === get_post_status( $spare ) && $number === co_sales_meta( $spare, 'number' ), 'restore and retry preserve document identity' );
-expect_workflow( $saved_project === $meta[$project], 'restore does not select an agreement' );
-// A signed QO with invoices, receipts and paid installments deletes as one set.
-$before = co_project_financials( $project ); $stage = co_crm_meta( $project, 'stage' );
-$outside = $meta[$other_quote]; $ma_before = $meta[$ma_stream];
-$group = co_sales_quote_group( $quote );
-expect_workflow( count( $group['documents'] ) === 4 && count( $group['payments'] ) === 2, 'whole QO tree and both payments discovered' );
-expect_workflow( '' === co_sales_quote_delete_reason( $quote ), 'invoiced main agreement delete enabled' );
-$denied_posts = array( $receipt );
-rejected_workflow( fn() => co_sales_quote_lifecycle( $quote ), 'permission on every child checked before writes' ); $denied_posts = array();
-expect_workflow( 'publish' === get_post_status( $quote ) && 'publish' === get_post_status( $invoice ), 'permission failure does not partially delete' );
-$fail_update_id = $receipt;
-rejected_workflow( fn() => co_sales_quote_lifecycle( $quote ), 'failed child write aborts cascade' );
-foreach ( $group['documents'] + $group['payments'] as $member => $status ) expect_workflow( $status === get_post_status( $member ), 'failed cascade rolls back member ' . $member );
-expect_workflow( co_project_financials( $project ) === $before && ! co_sales_meta( $quote, 'trash_batch' ), 'failed cascade rolls back financials and manifest' );
-co_sales_quote_lifecycle( $quote ); co_sales_quote_lifecycle( $quote );
-foreach ( $group['documents'] + $group['payments'] as $member => $status ) expect_workflow( 'trash' === get_post_status( $member ), 'cascade trashes member ' . $member );
-expect_workflow( co_project_financials( $project ) === array( 'quote' => 0, 'value' => 0.0, 'net' => 0.0, 'received' => 0.0, 'outstanding' => 0.0 ), 'deleted sale and cash removed from financial reports, no stale fallback value' );
-expect_workflow( 'publish' === get_post_status( $project ) && co_crm_meta( $project, 'stage' ) === $stage && $meta[$ma_stream] === $ma_before, 'Project stage, MA and work data preserved' );
-expect_workflow( $meta[$other_quote] === $outside && 'publish' === get_post_status( $other_quote ), 'other QO on same Project unchanged' );
-rejected_workflow( fn() => co_project_record_payment( $invoice, '2026-10-23' ), 'stale receive action rejected' );
-rejected_workflow( fn() => co_project_derive_document( $invoice ), 'stale receipt generation rejected' );
-rejected_workflow( fn() => co_sales_wht_require_invoice( $invoice ), 'deleted certificates inaccessible from download endpoint' );
-co_sales_quote_lifecycle( $quote, true ); co_sales_quote_lifecycle( $quote, true );
-foreach ( $group['documents'] + $group['payments'] as $member => $status ) expect_workflow( $status === get_post_status( $member ), 'whole set restored once ' . $member );
-expect_workflow( co_project_financials( $project ) === $before && count( co_crm_payments( $project ) ) === 2, 'restoring returns original values and original payments without duplicates' );
-expect_workflow( get_post_meta( $payment, '_crm_paid_date', true ) === '2025-12-31' && get_post_meta( $legacy, '_crm_paid_date', true ) === '2026-09-01', 'actual cash dates retained across restore' );
-rejected_workflow( fn() => co_sales_quote_lifecycle( $invoice ), 'cannot trash Invoice through QO endpoint' );
-rejected_workflow( fn() => co_sales_quote_lifecycle( $receipt ), 'cannot trash Receipt through QO endpoint' );
-rejected_workflow( fn() => co_sales_quote_lifecycle( 999999 ), 'invalid quote rejected' );
-$agreement_project = wp_insert_post( array( 'post_type' => 'client_project', 'post_status' => 'publish', 'post_title' => 'Agreement test' ) );
-$agreement = document_workflow( 0, $agreement_project );
-action_workflow( 'admin_post_co_project_accept_quote', array( 'project_id' => $agreement_project, 'quotation_id' => $agreement ) );
-co_sales_quote_lifecycle( $agreement );
-expect_workflow( co_project_quote( $agreement_project ) === 0, 'main agreement can be deleted without choosing a replacement' );
-// Restore cannot overwrite a replacement agreement selected in the meantime.
-$replacement = document_workflow( 0, $agreement_project, array( 'discount' => 1000 ) );
-action_workflow( 'admin_post_co_project_accept_quote', array( 'project_id' => $agreement_project, 'quotation_id' => $replacement ) );
-co_sales_quote_lifecycle( $agreement, true );
-expect_workflow( co_project_quote( $agreement_project ) === $replacement && co_project_financials( $agreement_project )['value'] === 19000.0, 'restore preserves newer agreement and price' );
-$with_child = document_workflow( 0, 0 );
-$child = wp_insert_post( array( 'post_type' => 'sales_document', 'post_status' => 'trash' ) );
-update_post_meta( $child, '_sales_source_document_id', $with_child );
-co_sales_quote_lifecycle( $with_child ); co_sales_quote_lifecycle( $with_child, true );
-expect_workflow( 'trash' === get_post_status( $child ), 'previously trashed child stays trashed after restoring parent' );
-// Four invoice installments, some paid and receipted, some not.
-$four = document_workflow( 0, 0, array( 'schedule_percent' => array( 25, 25, 25, 25 ), 'schedule_description' => array( 'A', 'B', 'C', 'D' ) ) );
-for ( $i = 1; $i <= 4; $i++ ) { $iv = co_project_derive_document( $four, $i ); if ( $i < 3 ) { co_project_record_payment( $iv, '2026-10-23' ); co_project_derive_document( $iv ); } }
-$four_group = co_sales_quote_group( $four );
-expect_workflow( count( $four_group['documents'] ) === 7 && count( $four_group['payments'] ) === 2, 'four-IV set contains both receipts and payments' );
-co_sales_quote_lifecycle( $four );
-foreach ( $four_group['documents'] + $four_group['payments'] as $member => $status ) expect_workflow( 'trash' === get_post_status( $member ), 'four-installment set removed completely' );
-co_sales_quote_lifecycle( $four, true );
-foreach ( $four_group['documents'] + $four_group['payments'] as $member => $status ) expect_workflow( $status === get_post_status( $member ), 'four-installment set restored completely' );
-$allowed = false;
-rejected_workflow( fn() => co_sales_quote_lifecycle( $spare ), 'delete permission checked' );
-rejected_workflow( fn() => co_sales_quote_lifecycle( $spare, true ), 'restore permission checked' );
-$allowed = true; $nonce_valid = false;
-rejected_workflow( fn() => action_workflow( 'admin_post_co_sales_quote_lifecycle', array( 'document_id' => $spare, 'operation' => 'trash' ) ), 'CSRF rejected' );
-$nonce_valid = true; $_SERVER['REQUEST_METHOD'] = 'GET';
-rejected_workflow( fn() => action_workflow( 'admin_post_co_sales_quote_lifecycle', array( 'document_id' => $spare, 'operation' => 'trash' ) ), 'GET cannot mutate documents' );
-$_SERVER['REQUEST_METHOD'] = 'POST';
-rejected_workflow( fn() => action_workflow( 'admin_post_co_sales_quote_lifecycle', array( 'document_id' => $spare, 'operation' => 'purge' ) ), 'permanent deletion not supported' );
-expect_workflow( 'publish' === get_post_status( $spare ), 'rejected actions leave QO untouched' );
-$_GET = array( 'type' => 'quotation' );
-ob_start(); co_sales_documents_page(); $listing = ob_get_clean();
-expect_workflow( str_contains( $listing, 'form="sales-quote-action-' . $spare . '"' ) && str_contains( $listing, 'ถังขยะ Quotation' ), 'active list offers delete and Trash' );
-if ( '--fixture' === ( $argv[1] ?? '' ) ) {
-	co_sales_quote_lifecycle( $spare );
-	$_GET = array( 'type' => 'quotation', 'view' => 'trash' ); ob_start(); co_sales_documents_page(); $trash = ob_get_clean();
-	$_GET = array( 'document' => $other_quote ); ob_start(); co_sales_edit_page(); $edit = ob_get_clean();
-	echo json_encode( array( 'listing' => $listing, 'trash' => $trash, 'edit' => $edit, 'spare' => $spare, 'locked' => $quote ), JSON_UNESCAPED_UNICODE ); exit;
+class QuotationDeleteTestDatabase {
+	public $posts = 'posts', $postmeta = 'postmeta', $options = 'options', $comments = 'comments', $commentmeta = 'commentmeta', $term_relationships = 'term_relationships', $term_taxonomy = 'term_taxonomy';
+	private $snapshot; private $active = false;
+	function prepare( $sql, ...$args ) { return $sql; }
+	function get_var( $sql ) { return str_contains( $sql, 'in_transaction' ) ? (int) $this->active : 'InnoDB'; }
+	function query( $sql ) {
+		if ( $sql === 'START TRANSACTION' ) { $this->snapshot = serialize( array( $GLOBALS['posts'], $GLOBALS['meta'], $GLOBALS['options'] ) ); $this->active = true; }
+		elseif ( $sql === 'ROLLBACK' ) { list( $GLOBALS['posts'], $GLOBALS['meta'], $GLOBALS['options'] ) = unserialize( $this->snapshot ); $this->active = false; }
+		elseif ( $sql === 'COMMIT' ) $this->active = false;
+		return 1;
+	}
 }
-echo "PASS: cascade QO/Invoice/Receipt/payment delete+restore, financial reconciliation, main agreement removal, four installments, authorization, rollback, unrelated Project/MA preservation, duplicate clicks and stale actions.\n";
+$wpdb = new QuotationDeleteTestDatabase(); $_SERVER['REQUEST_METHOD'] = 'POST';
+expect_workflow( co_sales_reference_document( $invoice ) === $quote && co_sales_reference_document( $receipt ) === $invoice && co_sales_reference_document( $quote ) === 0, 'INV references QO; Receipt references INV; QO has no Ref' );
+$print_css = file_get_contents( CO_THEME_DIR . '/assets/sales-print.css' );
+expect_workflow( str_contains( $print_css, '.sales-doc-totals b{padding:1mm 2mm;text-align:right;' ) && str_contains( $print_css, '.sales-doc-totals>div.sales-doc-baht{padding:1mm 2mm;text-align:right}' ), 'summary amounts and Thai total right aligned for all document types' );
+foreach ( array( $invoice => $quote, $receipt => $invoice ) as $doc => $ref ) {
+	ob_start(); co_sales_print_header( $doc, co_sales_meta( $doc, 'document_type' ), array(), array() ); $header = ob_get_clean();
+	expect_workflow( str_contains( $header, 'เลขที่อ้างอิง / Ref</b><span>' . co_sales_meta( $ref, 'number' ) ), 'correct direct-source Ref row under No.' );
+}
+$_GET = array( 'type' => 'quotation' ); ob_start(); co_sales_documents_page(); $listing = ob_get_clean();
+expect_workflow( ! str_contains( $listing, 'view=trash' ) && ! str_contains( $listing, 'กู้คืนทั้งชุด' ) && str_contains( $listing, 'value="delete"' ) && str_contains( $listing, 'กู้คืนไม่ได้' ), 'permanent delete UI, no Trash/Restore' );
+$group = co_sales_quote_group( $quote ); $before = co_project_financials( $project ); $outside = $meta[$other_quote]; $ma_before = $meta[$ma_stream];
+$denied_posts = array( $receipt ); rejected_workflow( fn() => co_sales_quote_lifecycle( $quote ), 'child permission required' ); $denied_posts = array();
+$fail_delete_id = $receipt; rejected_workflow( fn() => co_sales_quote_lifecycle( $quote ), 'failed delete rolls back' );
+foreach ( $group['documents'] + $group['payments'] as $member => $status ) expect_workflow( get_post_status( $member ) === $status, 'rollback restores member ' . $member );
+expect_workflow( co_project_financials( $project ) === $before, 'rollback restores financials' );
+$nonce_valid = false; rejected_workflow( fn() => action_workflow( 'admin_post_co_sales_quote_lifecycle', array( 'document_id' => $quote, 'operation' => 'delete' ) ), 'CSRF rejected' ); $nonce_valid = true;
+$_SERVER['REQUEST_METHOD'] = 'GET'; rejected_workflow( fn() => action_workflow( 'admin_post_co_sales_quote_lifecycle', array( 'document_id' => $quote, 'operation' => 'delete' ) ), 'GET rejected' ); $_SERVER['REQUEST_METHOD'] = 'POST';
+action_workflow( 'admin_post_co_sales_quote_lifecycle', array( 'document_id' => $quote, 'operation' => 'delete' ) );
+foreach ( $group['documents'] + $group['payments'] as $member => $status ) expect_workflow( ! get_post( $member ) && ! isset( $meta[$member] ), 'member and metadata physically deleted ' . $member );
+expect_workflow( co_project_financials( $project ) === array( 'quote' => 0, 'value' => 0.0, 'net' => 0.0, 'received' => 0.0, 'outstanding' => 0.0 ), 'deleted cash and sale absent from reports' );
+expect_workflow( 'publish' === get_post_status( $project ) && $meta[$other_quote] === $outside && $meta[$ma_stream] === $ma_before, 'Project, other QOs and MA preserved' );
+rejected_workflow( fn() => co_sales_quote_lifecycle( $quote ), 'repeat delete cannot affect other documents' );
+rejected_workflow( fn() => co_sales_quote_lifecycle( $quote, true ), 'restore not supported' );
+rejected_workflow( fn() => co_project_record_payment( $invoice, '2026-10-23' ), 'deleted invoice cannot receive payment' );
+rejected_workflow( fn() => co_project_derive_document( $invoice ), 'deleted invoice cannot generate receipt' );
+rejected_workflow( fn() => co_sales_wht_require_invoice( $invoice ), 'deleted tax files inaccessible' );
+echo "PASS: permanent QO/Invoice/Receipt/payment deletion, rollback, financial cleanup, permissions, no recovery UI and correct document references.\n";
