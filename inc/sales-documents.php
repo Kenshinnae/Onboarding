@@ -43,12 +43,24 @@ function co_sales_client_short( $client_id ) {
 	$short = strtoupper( preg_replace( '/[^A-Za-z0-9]/', '', (string) co_sales_meta( $client_id, 'short_name' ) ) );
 	return $short ?: 'CL' . absint( $client_id );
 }
+function co_sales_number_in_use( $number, $except = 0 ) {
+	$statuses = array_values( array_diff( co_sales_document_statuses(), array( 'trash' ) ) );
+	foreach ( get_posts( array( 'post_type' => 'sales_document', 'post_status' => $statuses, 'numberposts' => -1 ) ) as $document ) {
+		$id = $document->ID;
+		if ( (int) $id !== (int) $except && 0 === strcasecmp( trim( (string) co_sales_meta( $id, 'number' ) ), $number ) ) return true;
+	}
+	return false;
+}
+function co_sales_validate_manual_number( $value ) {
+	if ( ! is_string( $value ) ) throw new RuntimeException( 'เลข QO ไม่ถูกต้อง' );
+	$number = trim( $value );
+	if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,79}$/D', $number ) ) throw new RuntimeException( 'กรอกเลข QO ไม่เกิน 80 ตัว ใช้ตัวอักษรอังกฤษ ตัวเลข และ . _ / -' );
+	return $number;
+}
 function co_sales_next_number( $type, $client_id, $date, $installment = 0 ) {
 	$prefix = 'quotation' === $type ? 'QO' : ( 'invoice' === $type ? 'IV' . max( 1, absint( $installment ) ) : 'RC' . max( 1, absint( $installment ) ) );
 	$base = $prefix . '_' . co_sales_client_short( $client_id ) . wp_date( 'Ymd', strtotime( $date ?: 'now' ) ); $number = $base; $index = 2;
-	// Old soft-deleted records must not reserve numbers after permanent deletion replaced Trash.
-	$active_statuses = array_values( array_diff( co_sales_document_statuses(), array( 'trash' ) ) );
-	while ( get_posts( array( 'post_type' => 'sales_document', 'post_status' => $active_statuses, 'numberposts' => 1, 'meta_key' => '_sales_number', 'meta_value' => $number ) ) ) $number = $base . '-' . str_pad( $index++, 2, '0', STR_PAD_LEFT );
+	while ( co_sales_number_in_use( $number ) ) $number = $base . '-' . str_pad( $index++, 2, '0', STR_PAD_LEFT );
 	return $number;
 }
 function co_sales_default_concept() {
@@ -119,6 +131,9 @@ function co_sales_save_document_data() {
 	$id = absint( $_POST['document_id'] ?? 0 ); $type = sanitize_key( $_POST['document_type'] ?? 'quotation' ); if ( ! isset( co_sales_types()[$type] ) ) $type = 'quotation'; $client_id = absint( $_POST['client_id'] ?? 0 ); if ( 'sales_client' !== get_post_type( $client_id ) ) throw new RuntimeException( 'Select a valid client.' ); $date = sanitize_text_field( $_POST['issue_date'] ?? wp_date( 'Y-m-d' ) ); $installment = absint( $_POST['installment_no'] ?? 0 );
 	if ( $id && ( 'sales_document' !== get_post_type( $id ) || 'publish' !== get_post_status( $id ) ) ) throw new RuntimeException( 'Invalid document.' );
 	if ( $id ) $type = co_sales_meta( $id, 'document_type' );
+	$number_mode = 'quotation' === $type ? sanitize_key( $_POST['quotation_number_mode'] ?? co_sales_meta( $id, 'number_mode', 'auto' ) ) : 'auto';
+	if ( ! in_array( $number_mode, array( 'auto', 'manual' ), true ) ) throw new RuntimeException( 'เลือกวิธีกำหนดเลข QO ให้ถูกต้อง' );
+	$manual_number = 'manual' === $number_mode ? co_sales_validate_manual_number( wp_unslash( $_POST['quotation_number'] ?? co_sales_meta( $id, 'number' ) ) ) : '';
 	if ( $id && ( co_sales_financial_locked( $id ) || co_sales_wht_files( $id, true ) ) && (string) co_sales_meta( $id, 'issuer_id' ) !== sanitize_key( $_POST['issuer_id'] ?? '' ) ) throw new RuntimeException( 'ผู้ออกเอกสารล็อกตาม QO / Invoice แล้ว เพื่อให้รวบรวมภาษีตรงกับเอกสารเดิม' );
 	$issuer_key = sanitize_key( $_POST['issuer_id'] ?? '' ); $issuer = null;
 	$historical_issuer = co_sales_meta( $id, 'issuer_snapshot' );
@@ -163,8 +178,21 @@ function co_sales_save_document_data() {
 	$discount = round( (float) $discount, 2 );
 	co_sales_assert_financials( $id, $items, $discount, $schedule );
 	if ( ! $id && 'receipt' === $type ) throw new RuntimeException( 'กรุณาออก Receipt จาก Invoice ที่บันทึกรับเงินแล้ว' );
-	if ( $id && 'sales_document' === get_post_type( $id ) ) { $number = co_sales_meta( $id, 'number' ); wp_update_post( array( 'ID' => $id, 'post_title' => $number ) ); } else { list( $id, $number ) = co_sales_create_numbered_document( $type, $client_id, $date, $installment ); }
+	if ( $id && 'sales_document' === get_post_type( $id ) ) {
+		$number = co_sales_meta( $id, 'number' );
+		if ( '' !== $manual_number && $manual_number !== $number ) {
+			if ( co_sales_financial_locked( $id ) ) throw new RuntimeException( 'QO นี้มี Invoice แล้ว ไม่สามารถเปลี่ยนเลขอ้างอิงย้อนหลังได้' );
+			co_project_locked( 'sales_document_numbers', function () use ( $id, $manual_number ) {
+				if ( co_sales_number_in_use( $manual_number, $id ) ) throw new RuntimeException( 'เลข QO นี้มีในระบบแล้ว กรุณาใช้เลขอื่น' );
+				$result = wp_update_post( array( 'ID' => $id, 'post_title' => $manual_number ), true );
+				if ( is_wp_error( $result ) || ! $result ) throw new RuntimeException( 'บันทึกเลข QO ไม่สำเร็จ' );
+				update_post_meta( $id, '_sales_number', $manual_number );
+			} );
+			$number = $manual_number;
+		}
+	} else { list( $id, $number ) = co_sales_create_numbered_document( $type, $client_id, $date, $installment, $manual_number ); }
 	if ( is_wp_error( $id ) || ! $id ) throw new RuntimeException( 'ไม่สามารถบันทึกเอกสารได้' );
+	if ( 'quotation' === $type ) update_post_meta( $id, '_sales_number_mode', $number_mode );
 	$client = get_post( $client_id );
 	if ( $items ) update_post_meta( $id, '_sales_items', $items );
 	update_post_meta( $id, '_sales_body', implode( "\n\n", array_map( fn( $item ) => implode( "\n", array_column( co_sales_description_lines( $item ), 'text' ) ), $items ) ) );

@@ -46,14 +46,16 @@ function co_sales_invoice_payment( $invoice ) {
 	return 0;
 }
 
-function co_sales_create_numbered_document( $type, $client, $date, $installment ) {
-	return co_project_locked( 'number_' . $type . '_' . $client . '_' . $date . '_' . $installment, function () use ( $type, $client, $date, $installment ) {
-		$number = co_sales_next_number( $type, $client, $date, $installment );
+function co_sales_create_numbered_document( $type, $client, $date, $installment, $manual_number = '' ) {
+	return co_project_locked( 'sales_document_numbers', fn() => co_project_locked( 'number_' . $type . '_' . $client . '_' . $date . '_' . $installment, function () use ( $type, $client, $date, $installment, $manual_number ) {
+		if ( '' !== $manual_number && 'quotation' !== $type ) throw new RuntimeException( 'กำหนดเลขเองได้เฉพาะ Quotation' );
+		$number = '' !== $manual_number ? co_sales_validate_manual_number( $manual_number ) : co_sales_next_number( $type, $client, $date, $installment );
+		if ( co_sales_number_in_use( $number ) ) throw new RuntimeException( 'เลข QO นี้มีในระบบแล้ว กรุณาใช้เลขอื่น' );
 		$id = wp_insert_post( array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'post_title' => $number ), true );
 		if ( is_wp_error( $id ) || ! $id ) throw new RuntimeException( 'สร้างเอกสารไม่สำเร็จ' );
 		update_post_meta( $id, '_sales_number', $number );
 		return array( $id, $number );
-	} );
+	} ) );
 }
 
 function co_sales_payment_matches_invoice( $invoice ) {

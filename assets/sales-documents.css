@@ -89,3 +89,4 @@
   cursor:default;
 }
 .sales-row-actions{display:flex;flex-direction:column;align-items:flex-start;gap:6px;white-space:nowrap}.sales-lifecycle-notice{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:12px;margin:12px 0}.sales-row-actions .sales-link,.sales-lifecycle-notice .sales-link{font-size:inherit}.sales-link:disabled{cursor:not-allowed;opacity:.5}.sales-lifecycle-notice small{color:#64748b}
+.sales-qo-number{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}.sales-qo-number>label{min-width:0}@media(max-width:700px){.sales-qo-number{grid-template-columns:1fr}}

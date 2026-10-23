@@ -1,5 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('.sales-document-form');
+  const quoteNumberPanel = form?.querySelector('[data-quotation-number]');
+  function updateQuoteNumber() {
+    if (!quoteNumberPanel) return;
+    const quotation = form.dataset.documentType === 'quotation';
+    quoteNumberPanel.hidden = !quotation;
+    const mode = quoteNumberPanel.querySelector('[data-quotation-number-mode]');
+    if (!mode) return; // Existing invoiced QOs keep their number locked.
+    mode.disabled = !quotation;
+    const manual = quotation && mode.value === 'manual';
+    quoteNumberPanel.querySelector('[data-quotation-number-entry]').hidden = !manual;
+    quoteNumberPanel.querySelector('[data-quotation-number-auto]').hidden = manual;
+    const input = quoteNumberPanel.querySelector('[name="quotation_number"]');
+    input.disabled = !manual; input.required = manual;
+  }
+  quoteNumberPanel?.querySelector('[data-quotation-number-mode]')?.addEventListener('change', updateQuoteNumber);
+  updateQuoteNumber();
   function initializeDescriptions(container = form) {
     container?.querySelectorAll('[data-sales-item]').forEach(item => {
       if (item.querySelector('[data-description-editor]')) return;
@@ -110,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
   form?.addEventListener('input', calculate);
   form?.querySelector('[data-type-select]')?.addEventListener('change', event => {
     form.dataset.documentType = event.target.value;
+    updateQuoteNumber();
     calculate();
   });
   calculate();

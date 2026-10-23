@@ -25,6 +25,16 @@ function co_sales_documents_page() {
 	</tbody></table></div><?php if ( $has_wht ) : ?></form><?php endif; ?></section><?php if ( 'quotation' === $type ) foreach ( $documents as $document ) co_sales_quote_action_form( $document->ID ); ?></div>
 <?php }
 
+function co_sales_quotation_number_field( $id, $type ) {
+	$mode = co_sales_meta( $id, 'number_mode', 'auto' ); $number = co_sales_meta( $id, 'number' ); $locked = $id && co_sales_financial_locked( $id ); ?>
+	<div class="sales-qo-number" data-quotation-number <?php echo 'quotation' !== $type ? 'hidden' : ''; ?>>
+	<?php if ( $locked ) : ?><label>เลข Quotation<input readonly value="<?php echo esc_attr( $number ); ?>"><small class="sales-field-help">มี Invoice อ้างอิงแล้ว จึงคงเลขเดิม</small></label><input type="hidden" name="quotation_number_mode" value="<?php echo esc_attr( $mode ); ?>"><input type="hidden" name="quotation_number" value="<?php echo esc_attr( $number ); ?>">
+	<?php else : ?><label>วิธีกำหนดเลข QO<select name="quotation_number_mode" data-quotation-number-mode><option value="auto" <?php selected( $mode, 'auto' ); ?>><?php echo $id ? 'ใช้เลขเดิม (ไม่เปลี่ยนย้อนหลัง)' : 'รันเลขอัตโนมัติ (ปกติ)'; ?></option><option value="manual" <?php selected( $mode, 'manual' ); ?>>กรอกเลขเอง — เอกสารที่ออกไว้แล้ว</option></select></label>
+	<label data-quotation-number-auto <?php echo 'manual' === $mode ? 'hidden' : ''; ?>>เลข Quotation<input readonly value="<?php echo esc_attr( $number ?: 'ระบบจะรันเลขให้เมื่อบันทึก' ); ?>"></label>
+	<label data-quotation-number-entry <?php echo 'manual' !== $mode ? 'hidden' : ''; ?>>เลข QO ที่กำหนดเอง<input name="quotation_number" maxlength="80" autocomplete="off" value="<?php echo esc_attr( $number ); ?>" placeholder="เช่น QO_EFL20260113" <?php echo 'manual' === $mode ? 'required' : 'disabled'; ?>><small class="sales-field-help">ใช้เฉพาะเลขเอกสารเดิม ระบบตรวจไม่ให้ซ้ำกับใบที่ใช้งานอยู่</small></label><?php endif; ?></div>
+	<?php
+}
+
 function co_sales_edit_page() {
 	if ( ! current_user_can( 'edit_posts' ) ) return;
 	$id = absint( $_GET['document'] ?? 0 );
@@ -48,6 +58,7 @@ function co_sales_edit_page() {
 	<?php if ( $id && co_sales_financial_locked( $id ) ) : ?><p class="sales-billing-warning">ราคา ลูกค้า Project และแผนงวดล็อกตามข้อตกลงแล้ว ยังคงแก้รายละเอียดงานและวันที่เอกสารได้ โดยไม่เปลี่ยนวันที่รับเงินจริง</p><?php endif; ?>
 	<form data-price-total="<?php echo esc_attr( co_sales_document_breakdown( $id )['price'] ); ?>" data-rounding-adjustment="<?php echo esc_attr( co_sales_meta( $id, 'rounding_adjustment', 0 ) ); ?>" data-wht-amount="<?php echo esc_attr( co_sales_wht( $id ) ); ?>" class="sales-form sales-document-form" data-financial-locked="<?php echo $id && co_sales_financial_locked( $id ) ? '1' : '0'; ?>" data-document-type="<?php echo esc_attr( $type ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><?php wp_nonce_field( 'co_sales_document' ); ?><input type="hidden" name="action" value="co_sales_save_document"><input type="hidden" name="document_id" value="<?php echo $id; ?>"><input type="hidden" name="source_document_id" value="<?php echo absint( co_sales_meta( $id, 'source_document_id' ) ); ?>">
 	<section class="sales-panel"><h2>ข้อมูลเอกสาร</h2><div class="sales-grid">
+	<?php co_sales_quotation_number_field( $id, $type ); ?>
 	<label>ประเภทเอกสาร<?php if ( $id ) : ?><input readonly value="<?php echo esc_attr( co_sales_types()[$type] ); ?>"><input type="hidden" name="document_type" value="<?php echo esc_attr( $type ); ?>"><?php else : ?><select name="document_type" data-type-select><?php foreach ( co_sales_types() as $key => $label ) : ?><option value="<?php echo esc_attr( $key ); ?>" <?php selected( $type, $key ); ?>><?php echo esc_html( $label ); ?></option><?php endforeach; ?></select><?php endif; ?></label>
 	<label>ลูกค้า *<select required name="client_id"><option value="">เลือกลูกค้า</option><?php foreach ( co_sales_clients() as $client ) : ?><option value="<?php echo $client->ID; ?>" <?php selected( co_sales_meta( $id, 'client_id', get_post_meta( $project_id, '_crm_sales_client_id', true ) ), $client->ID ); ?>><?php echo esc_html( $client->post_title ); ?></option><?php endforeach; ?></select><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-clients' ) ); ?>">เพิ่ม / แก้ไขข้อมูลลูกค้า</a></label>
 	<label>Project<select name="project_id"><option value="">ไม่เชื่อม Project</option><?php foreach ( co_crm_projects() as $project ) : ?><option value="<?php echo $project->ID; ?>" <?php selected( $project_id, $project->ID ); ?>><?php echo esc_html( $project->post_title ); ?></option><?php endforeach; ?></select></label>
