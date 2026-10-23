@@ -14,6 +14,9 @@ roll back database changes if a record deletion fails. Private certificate files
 unique to the deleted set are unlinked after the database succeeds; shared files
 are preserved. File cleanup failures stop with an explicit administrator error.
 Nothing automatically purges previously trashed records on deployment.
+Legacy Trash records do not reserve document numbers. New QO/Invoice/Receipt
+numbers use the first available base number or suffix, while all active document
+statuses still reserve their numbers. Existing documents are not renumbered.
 
 Run `php tests/quotation-lifecycle.php`, `php tests/project-workflow.php` and
 `php tests/withholding.php`. Tests use isolated in-memory fixtures.

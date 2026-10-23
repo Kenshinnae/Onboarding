@@ -46,7 +46,9 @@ function co_sales_client_short( $client_id ) {
 function co_sales_next_number( $type, $client_id, $date, $installment = 0 ) {
 	$prefix = 'quotation' === $type ? 'QO' : ( 'invoice' === $type ? 'IV' . max( 1, absint( $installment ) ) : 'RC' . max( 1, absint( $installment ) ) );
 	$base = $prefix . '_' . co_sales_client_short( $client_id ) . wp_date( 'Ymd', strtotime( $date ?: 'now' ) ); $number = $base; $index = 2;
-	while ( get_posts( array( 'post_type' => 'sales_document', 'post_status' => co_sales_document_statuses(), 'numberposts' => 1, 'meta_key' => '_sales_number', 'meta_value' => $number ) ) ) $number = $base . '-' . str_pad( $index++, 2, '0', STR_PAD_LEFT );
+	// Old soft-deleted records must not reserve numbers after permanent deletion replaced Trash.
+	$active_statuses = array_values( array_diff( co_sales_document_statuses(), array( 'trash' ) ) );
+	while ( get_posts( array( 'post_type' => 'sales_document', 'post_status' => $active_statuses, 'numberposts' => 1, 'meta_key' => '_sales_number', 'meta_value' => $number ) ) ) $number = $base . '-' . str_pad( $index++, 2, '0', STR_PAD_LEFT );
 	return $number;
 }
 function co_sales_default_concept() {
