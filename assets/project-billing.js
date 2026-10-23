@@ -1,4 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-copy-project-report]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const box = button.closest('.crm-customer-report-controls');
+      const status = box.querySelector('[data-report-copy-status]');
+      button.disabled = true; status.textContent = 'กำลังเตรียมลิงก์…';
+      try {
+        const response = await fetch(button.dataset.endpoint, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({action:'co_project_customer_report_link', project:button.dataset.copyProjectReport, nonce:button.dataset.nonce})});
+        const result = await response.json();
+        if (!response.ok || !result.success || !result.data.url) throw new Error('Unable to load report link');
+        let copied = false;
+        try { if (navigator.clipboard && window.isSecureContext) {await navigator.clipboard.writeText(result.data.url); copied = true;} } catch (_) {}
+        if (!copied) {
+          const input = document.createElement('textarea'); input.value = result.data.url; input.readOnly = true;
+          input.style.cssText = 'position:fixed;left:-9999px'; document.body.append(input); input.select();
+          try {copied = document.execCommand('copy');} catch (_) {} input.remove();
+        }
+        let fallback = box.querySelector('[data-report-link-fallback]');
+        if (!copied) {
+          if (!fallback) {fallback = document.createElement('input'); fallback.readOnly = true; fallback.dataset.reportLinkFallback = ''; fallback.setAttribute('aria-label','ลิงก์รายงานลูกค้า — เลือกแล้วคัดลอก'); box.querySelector('.crm-customer-report-actions').after(fallback);}
+          fallback.value = result.data.url; fallback.hidden = false; fallback.focus(); fallback.select();
+        } else if (fallback) fallback.hidden = true;
+        status.textContent = copied ? 'คัดลอกลิงก์แล้ว ✓' : 'เลือกคัดลอกลิงก์จากช่องด้านล่าง';
+      } catch (_) {status.textContent = 'เตรียมลิงก์ไม่สำเร็จ กรุณาลองใหม่ หรือกดเปิดรายงานลูกค้า';}
+      finally {button.disabled = false;}
+    });
+  });
   document.querySelectorAll('.sales-project-client').forEach(form => {
     form.addEventListener('submit', () => {
       const button = form.querySelector('button');

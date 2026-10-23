@@ -1,0 +1,57 @@
+.project-report{font-family:Tahoma,Arial,sans-serif;font-size:14px;line-height:1.65}
+.project-report .crm-hero{border-radius:18px;margin-top:15px;align-items:flex-start}
+.project-report .crm-hero h1{color:#fff!important;line-height:1.25;overflow-wrap:anywhere}
+.project-report .crm-hero p{font-size:14px}
+.project-report-hero-status{display:inline-block;margin-top:15px;border:1px solid #bcd3fc;border-radius:30px;padding:4px 14px;background:#ffffff1a;color:white;font-size:13px;font-weight:700}
+.project-report .crm-stats{margin-top:18px;border-radius:14px;overflow:hidden}
+.project-report .crm-stats strong{font-size:clamp(20px,2.4vw,30px);overflow-wrap:anywhere}
+.project-report-nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.project-report-nav a{padding:10px 16px;border:1px solid #d7e3f4;border-radius:10px;background:#fff;color:#245dcc;text-decoration:none;font-weight:700;font-size:13px}
+.project-report-alerts:empty{display:none}
+.project-report-alerts p{padding:12px 16px;border:1px solid #eddbad;border-radius:10px;background:#fff9ed;color:#78541e;margin:9px 0}
+.project-report-section{scroll-margin-top:55px;margin:22px 0;padding:26px;border:1px solid #d8e4f4;border-radius:16px;background:white;min-width:0;box-shadow:0 8px 28px #16366908}
+.project-report-section h2{margin:0 0 20px;font-size:23px;color:#132441}
+.project-report-section h3{font-size:17px;color:#19345d;margin:22px 0 12px;overflow-wrap:anywhere}
+.project-report-section h4{margin:12px 0 5px;font-size:14px}
+.project-report-section a{color:#245dcc;overflow-wrap:anywhere}
+.project-report-section .crm-btn{color:#fff;font-size:13px;line-height:1.5;white-space:normal;text-align:center}
+.project-report-section .crm-btn.ghost-dark{color:#245dcc;background:#edf3ff;border:1px solid #d7e3f4}
+.project-report-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:30px}
+.project-report-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;margin:0 0 16px}
+.project-report-fields>div{padding:12px 0;border-bottom:1px solid #e8eef6;min-width:0}
+.project-report-fields dt{color:#70809a;font-size:12px;font-weight:700;margin-bottom:4px}
+.project-report-fields dd{margin:0;color:#17233e;overflow-wrap:anywhere;white-space:pre-wrap}
+.project-report-copy{line-height:1.8;overflow-wrap:anywhere;white-space:pre-wrap}
+.project-report-muted,.project-report-empty{color:#657b9b;line-height:1.7}
+.project-report-empty{padding:16px;background:#f6f9fe;border:1px dashed #d5e1f1;border-radius:10px}
+.project-report-stages{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+.project-report-stages li{padding:8px 12px;border:1px solid #dce5f1;border-radius:9px;background:#f7f9fd;color:#657b9b;font-size:12px}
+.project-report-stages li.current{background:#245dcc;border-color:#245dcc;color:#fff;font-weight:700}
+.project-report-section-head,.project-report-document>header,.project-report-installment>header,.project-report-log-list article>header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.project-report-section-head h3,.project-report-document h3,.project-report-installment h3,.project-report-log-list h3{margin:4px 0 10px}
+.project-report-installments,.project-report-log-list{display:grid;gap:14px}
+.project-report-installment,.project-report-document,.project-report-log-list>article{min-width:0;padding:20px;border:1px solid #d8e4f4;border-radius:12px;background:#fbfdff}
+.project-report-document{margin:16px 0}
+.project-report-document details{margin-top:18px}
+.project-report-document summary{color:#245dcc;font-weight:700;cursor:pointer;line-height:1.7}
+.project-report-document small,.project-report-installment small,.project-report-log-list small{color:#657b9b}
+.project-report-doc-total{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.project-report-doc-total strong,.project-report-installment>header>strong,.project-report-log-list article>header>strong{font-size:22px;color:#17233e;white-space:nowrap;font-variant-numeric:tabular-nums}
+.project-report-doc-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.project-report-doc-counts>div{padding:16px;border-radius:10px;background:#edf3ff;color:#24416d}
+.project-report-doc-counts small{display:block;font-size:13px}.project-report-doc-counts strong{display:block;font-size:24px;margin-top:5px}
+.project-report-payment-chain{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:12px 0;overflow-wrap:anywhere}
+.project-report-payment-chain a{font-weight:700}
+.project-report-badge{display:inline-block;padding:5px 10px;border-radius:20px;background:#eaf1fd;color:#244c86;font-size:12px;line-height:1.6}
+.project-report-badge.warning{background:#fff3d9;color:#78541e}
+.project-report-work-items{display:grid;gap:12px;margin-top:18px}
+.project-report-work-items>div{padding:16px;border:1px solid #dce5f1;border-radius:10px;background:#fff}
+.project-report-work-items header{display:flex;justify-content:space-between;gap:18px;margin-bottom:12px;color:#24416d}
+.project-report-months{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:24px}
+.project-report-months article{padding:16px;border-radius:10px;background:#edf3ff;display:flex;flex-direction:column;gap:6px}
+.project-report-months article strong{color:#19345d;font-size:22px}.project-report-months article span,.project-report-months article small{font-size:12px;color:#657b9b}
+.project-report .crm-assets-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.project-report-reference{padding:12px 16px;background:#f6f9fe;border-radius:8px;overflow-wrap:anywhere}
+.project-report-footer{color:#70809a;font-size:12px;text-align:center;margin:26px 0}
+@media(max-width:850px){.project-report-two{grid-template-columns:1fr}.project-report .crm-hero{flex-direction:column}.project-report .crm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.project-report{margin-right:10px}.project-report-section{padding:18px}.project-report-fields{grid-template-columns:1fr}.project-report-section h2{font-size:20px}.project-report-document>header,.project-report-installment>header,.project-report-log-list article>header,.project-report-section-head{flex-direction:column;gap:8px}.project-report-doc-total{align-items:flex-start}.project-report-document,.project-report-installment,.project-report-log-list>article{padding:15px}.project-report-doc-counts{gap:7px}.project-report-doc-counts>div{padding:12px}.project-report-doc-counts small{font-size:11px}.project-report-nav a{font-size:12px;padding:8px 10px}.project-report .crm-assets-grid{grid-template-columns:minmax(0,1fr)}}

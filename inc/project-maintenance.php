@@ -30,7 +30,7 @@ function co_project_start_ma( $project, $input ) {
 			if ( is_wp_error( $workstream ) || ! $workstream ) throw new RuntimeException( 'สร้างโปรเจกต์ MA ไม่สำเร็จ' );
 			update_post_meta( $workstream, '_ma_client_id', $client ); update_post_meta( $workstream, '_ma_status', 'active' ); update_post_meta( $workstream, '_ma_description', co_crm_project_brief( $project ) );
 		}
-		update_post_meta( $workstream, '_ma_crm_project_id', $project ); update_post_meta( $project, '_crm_ma_project_id', $workstream ); update_post_meta( $project, '_crm_ma_client_id', $client ); update_post_meta( $project, '_crm_stage', 'ma' );
+		update_post_meta( $workstream, '_ma_crm_project_id', $project ); update_post_meta( $project, '_crm_ma_project_id', $workstream ); update_post_meta( $project, '_crm_ma_client_id', $client ); update_post_meta( $project, '_crm_stage', 'launch_ma' );
 		return $client;
 	};
 	$stream = absint( $input['ma_project_id'] ?? 0 );

@@ -45,6 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (editor) item.querySelector('[name="item_text[]"]').value = editor.innerHTML;
     });
   });
+  form?.addEventListener('invalid', event => {
+    const item = event.target.closest('details[data-sales-item]');
+    if (item) item.open = true;
+  }, true);
   const money = n => Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   const rounded = n => Math.round((n + Number.EPSILON) * 100) / 100;
   const schedule = form?.querySelector('[data-sales-schedule]');
@@ -70,6 +74,16 @@ document.addEventListener('DOMContentLoaded', () => {
     form.querySelector('[data-document-installment]').hidden = quotation;
     installment.type = quotation ? 'hidden' : 'number';
     installment.value = quotation ? '0' : String(Math.max(1, Number(installment.value) || 1));
+    form.querySelector('[data-document-title-label]').textContent = quotation ? 'ชื่องาน / ชื่อใบเสนอราคา' : 'หัวข้อรายการ / รายละเอียดงวด';
+    form.querySelector('[data-document-title-help]').textContent = quotation ? 'ชื่องานสำหรับอ้างอิงในระบบ ส่วนรายละเอียดที่พิมพ์ใน Quotation ให้กรอกในรายการงานด้านล่าง' : 'หัวข้อนี้จะแสดงก่อนรายละเอียดงานใน ' + (form.dataset.documentType === 'invoice' ? 'Invoice' : 'Receipt');
+    form.querySelectorAll('[data-sales-items] [data-sales-item]').forEach((item, index) => {
+      const preview = document.createElement('div');
+      preview.innerHTML = item.querySelector('[data-description-editor]').innerHTML.replace(/<br\s*\/?>|<\/?(?:div|p|li)(?:\s[^>]*)?>/gi, '\n');
+      item.querySelector('[data-item-number]').textContent = 'รายการที่ ' + (index + 1);
+      item.querySelector('[data-item-preview]').textContent = preview.textContent.split('\n').map(line => line.trim()).find(Boolean) || 'รายการใหม่ — กดเพื่อเพิ่มรายละเอียด';
+      const amount = item.querySelector('[name="item_amount[]"]').value;
+      item.querySelector('[data-item-amount]').textContent = amount === '' ? 'ยังไม่ระบุมูลค่า' : '฿' + money(Math.max(0, Number(amount) || 0));
+    });
     const percent = quotation ? 100 : Math.min(100, Math.max(0, Number(schedule?.querySelector('[name="schedule_percent[]"]').value) || 0));
     const subtotal = form.querySelector('[name="subtotal"]');
     const value = rounded(rounded(netBase * percent / 100) + (financialLocked ? Number(form.dataset.roundingAdjustment || 0) : 0));
@@ -169,6 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
       row.querySelectorAll('input,textarea').forEach(el => el.value = '');
       list.append(row);
       initializeDescriptions();
+      row.open = true;
+      calculate();
       row.querySelector('[data-description-editor]').focus();
     }
     const remove = event.target.closest('[data-remove-item]');
