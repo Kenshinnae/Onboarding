@@ -187,6 +187,7 @@ function co_project_derive_document( $source, $installment = 1 ) {
 		$client = absint( co_sales_meta( $source, 'client_id' ) ); $date = wp_date( 'Y-m-d' );
 		list( $id, $number ) = co_sales_create_numbered_document( $type, $client, $date, $installment );
 		foreach ( array( 'project_id', 'client_id', 'client_snapshot', 'issuer_id', 'issuer_snapshot', 'body', 'wht_rate', 'notes', 'discount' ) as $key ) update_post_meta( $id, '_sales_' . $key, co_sales_meta( $source, $key ) );
+		update_post_meta( $id, '_sales_signature_mode', co_sales_signature_mode( $source ) );
 		$values = array( 'items' => co_sales_items( $source ), 'base_total' => co_sales_meta( $source, 'base_total', co_sales_items_value( co_sales_items( $source ) ) ), 'number' => $number, 'document_type' => $type, 'source_document_id' => $source, 'installment_no' => $installment, 'installment_percent' => (float) $row['percent'], 'payment_schedule' => array( $row ), 'payment_schedule_text' => $row['percent'] . '|' . $row['description'], 'issue_date' => $date, 'status' => 'receipt' === $type ? 'paid' : 'draft', 'subtotal' => $subtotal, 'title' => 'invoice' === $type ? 'งวดที่ ' . $installment . ' : ' . $row['percent'] . '% ' . $row['description'] : co_sales_meta( $source, 'title' ) );
 		foreach ( $values as $key => $value ) update_post_meta( $id, '_sales_' . $key, $value );
 		if ( 'invoice' === $type ) {

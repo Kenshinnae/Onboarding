@@ -65,7 +65,7 @@ function wp_nonce_field( ...$a ) {}
 function add_query_arg( $key, $value, $url ) { return $url . '&' . $key . '=' . $value; }
 function selected( $a, $b ) { if ( (string) $a === (string) $b ) echo 'selected'; }
 function disabled( $a, $b = true ) { if ( (bool) $a === (bool) $b ) echo 'disabled'; }
-function wp_get_attachment_image_url( ...$a ) { return ''; }
+function wp_get_attachment_image_url( ...$a ) { return $GLOBALS['fixture_signature_urls'][$a[0] ?? 0] ?? ''; }
 function wp_get_attachment_url( $id ) { return 'https://test.invalid/uploads/' . $id . '.pdf'; }
 function get_post_mime_type( $id ) { return 'application/pdf'; }
 function get_attached_file( $id ) { return '/uploads/' . $id . '.pdf'; }

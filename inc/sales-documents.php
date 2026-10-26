@@ -30,6 +30,7 @@ add_action( 'admin_enqueue_scripts', function () {
 } );
 
 function co_sales_meta( $id, $key, $default = '' ) { if ( ! absint( $id ) ) return $default; $value = get_post_meta( $id, '_sales_' . $key, true ); return '' === $value ? $default : $value; }
+function co_sales_signature_mode( $id ) { return 'manual' === co_sales_meta( $id, 'signature_mode' ) ? 'manual' : 'image'; }
 function co_sales_clients() { return get_posts( array( 'post_type' => 'sales_client', 'post_status' => 'publish', 'numberposts' => -1, 'orderby' => 'title', 'order' => 'ASC' ) ); }
 function co_sales_documents( $project_id = 0 ) { $args = array( 'post_type' => 'sales_document', 'post_status' => 'publish', 'numberposts' => -1, 'orderby' => 'date', 'order' => 'DESC' ); if ( $project_id ) $args['meta_query'] = array( array( 'key' => '_sales_project_id', 'value' => $project_id ) ); return get_posts( $args ); }
 function co_sales_types() { return array( 'quotation' => 'Quotation', 'invoice' => 'Invoice', 'receipt' => 'Receipt' ); }
@@ -131,6 +132,8 @@ function co_sales_save_document_data() {
 	$id = absint( $_POST['document_id'] ?? 0 ); $type = sanitize_key( $_POST['document_type'] ?? 'quotation' ); if ( ! isset( co_sales_types()[$type] ) ) $type = 'quotation'; $client_id = absint( $_POST['client_id'] ?? 0 ); if ( 'sales_client' !== get_post_type( $client_id ) ) throw new RuntimeException( 'Select a valid client.' ); $date = sanitize_text_field( $_POST['issue_date'] ?? wp_date( 'Y-m-d' ) ); $installment = absint( $_POST['installment_no'] ?? 0 );
 	if ( $id && ( 'sales_document' !== get_post_type( $id ) || 'publish' !== get_post_status( $id ) ) ) throw new RuntimeException( 'Invalid document.' );
 	if ( $id ) $type = co_sales_meta( $id, 'document_type' );
+	$signature_mode = $_POST['signature_mode'] ?? co_sales_signature_mode( $id );
+	if ( ! in_array( $signature_mode, array( 'image', 'manual' ), true ) ) throw new RuntimeException( 'กรุณาเลือกรูปแบบลายเซ็นให้ถูกต้อง' );
 	$number_mode = 'quotation' === $type ? sanitize_key( $_POST['quotation_number_mode'] ?? co_sales_meta( $id, 'number_mode', 'auto' ) ) : 'auto';
 	if ( ! in_array( $number_mode, array( 'auto', 'manual' ), true ) ) throw new RuntimeException( 'เลือกวิธีกำหนดเลข QO ให้ถูกต้อง' );
 	$manual_number = 'manual' === $number_mode ? co_sales_validate_manual_number( wp_unslash( $_POST['quotation_number'] ?? co_sales_meta( $id, 'number' ) ) ) : '';
@@ -193,6 +196,7 @@ function co_sales_save_document_data() {
 	} else { list( $id, $number ) = co_sales_create_numbered_document( $type, $client_id, $date, $installment, $manual_number ); }
 	if ( is_wp_error( $id ) || ! $id ) throw new RuntimeException( 'ไม่สามารถบันทึกเอกสารได้' );
 	if ( 'quotation' === $type ) update_post_meta( $id, '_sales_number_mode', $number_mode );
+	update_post_meta( $id, '_sales_signature_mode', $signature_mode );
 	$client = get_post( $client_id );
 	if ( $items ) update_post_meta( $id, '_sales_items', $items );
 	update_post_meta( $id, '_sales_body', implode( "\n\n", array_map( fn( $item ) => implode( "\n", array_column( co_sales_description_lines( $item ), 'text' ) ), $items ) ) );
