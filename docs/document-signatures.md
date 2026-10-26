@@ -13,4 +13,11 @@ preference. Later changes do not rewrite previously created child documents.
 Existing documents without a preference continue including the configured image.
 Issuer signature settings and the uploaded signature image are never removed.
 
+The admin Preview / PDF toolbar also offers “แนบลายเซ็น / เว้นไว้เซ็นมือ”.
+Changing this selector refreshes the preview using a read-only GET parameter;
+printing uses that selected version. It affects only this preview/PDF, not the
+saved document, its children, finances, issuer settings or customer-shared view.
+The initial preview uses the document's saved preference. Customer links do not
+accept this admin preview override.
+
 Test: `php tests/document-signatures.php` (isolated fixtures, no real data).

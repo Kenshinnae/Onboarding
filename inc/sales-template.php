@@ -135,7 +135,9 @@ function co_sales_print_header( $id, $type, $client, $issuer ) { $reference = co
 	</header>
 <?php }
 
-function co_sales_render_paper( $id ) {
+function co_sales_render_paper( $id, $signature_mode = null ) {
+	$signature_mode = $signature_mode ?? co_sales_signature_mode( $id );
+	if ( ! in_array( $signature_mode, array( 'image', 'manual' ), true ) ) throw new RuntimeException( 'รูปแบบลายเซ็นไม่ถูกต้อง' );
 	$type = co_sales_meta( $id, 'document_type', 'quotation' );
 	$client = (array) co_sales_meta( $id, 'client_snapshot', array() );
 	$issuer = (array) co_sales_meta( $id, 'issuer_snapshot', array() );
@@ -149,7 +151,7 @@ function co_sales_render_paper( $id ) {
 			}
 		}
 	}
-	$manual_signature = 'manual' === co_sales_signature_mode( $id );
+	$manual_signature = 'manual' === $signature_mode;
 	$signature = ! $manual_signature && ! empty( $issuer['signature_id'] ) ? wp_get_attachment_image_url( $issuer['signature_id'], 'medium' ) : '';
 	$items = co_sales_items( $id );
 	$schedule = co_sales_billing_schedule( $id );

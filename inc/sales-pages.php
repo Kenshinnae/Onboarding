@@ -81,7 +81,9 @@ function co_sales_preview_page() {
 	if ( ! current_user_can( 'edit_posts' ) ) return;
 	$id = absint( $_GET['document'] ?? 0 );
 	if ( 'sales_document' !== get_post_type( $id ) || 'publish' !== get_post_status( $id ) ) wp_die( 'Document not found.' );
+	$signature_mode = $_GET['preview_signature'] ?? co_sales_signature_mode( $id );
+	if ( ! in_array( $signature_mode, array( 'image', 'manual' ), true ) ) wp_die( 'รูปแบบลายเซ็นไม่ถูกต้อง' );
 	co_sales_assets(); ?>
-	<div class="sales-preview-toolbar"><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-edit&document=' . $id ) ); ?>">← แก้ไข <?php echo esc_html( co_sales_types()[co_sales_meta( $id, 'document_type' )] ); ?></a><button class="sales-btn" onclick="window.print()">Print / Save PDF</button></div>
-	<?php co_sales_render_paper( $id );
+	<div class="sales-preview-toolbar"><a href="<?php echo esc_url( admin_url( 'admin.php?page=co-sales-edit&document=' . $id ) ); ?>">← แก้ไข <?php echo esc_html( co_sales_types()[co_sales_meta( $id, 'document_type' )] ); ?></a><form class="sales-preview-signature-form" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>"><input type="hidden" name="page" value="co-sales-preview"><input type="hidden" name="document" value="<?php echo $id; ?>"><label>ลายเซ็นใน PDF <select name="preview_signature" onchange="this.form.requestSubmit()"><option value="image" <?php selected( $signature_mode, 'image' ); ?>>แนบลายเซ็น</option><option value="manual" <?php selected( $signature_mode, 'manual' ); ?>>เว้นไว้เซ็นมือ</option></select></label><noscript><button type="submit" class="sales-btn light">อัปเดต Preview</button></noscript></form><button type="button" class="sales-btn" onclick="window.print()">Print / Save PDF</button><small class="sales-preview-signature-note">เลือกได้สำหรับ Preview / PDF ครั้งนี้ โดยไม่เปลี่ยนค่าลายเซ็นที่บันทึกในเอกสาร</small></div>
+	<?php co_sales_render_paper( $id, $signature_mode );
 }
